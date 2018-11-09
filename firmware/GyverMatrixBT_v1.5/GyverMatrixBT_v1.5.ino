@@ -2,11 +2,13 @@
   Скетч к проекту "Управляемая RGB матрица"
   Гайд по постройке матрицы: https://alexgyver.ru/matrix_guide/
   Страница проекта (схемы, описания): https://alexgyver.ru/GyverMatrixBT/
-  Исходники на GitHub:
+  Исходники на GitHub: https://github.com/AlexGyver/GyverMatrixBT/
   Нравится, как написан код? Поддержи автора! https://alexgyver.ru/support_alex/
   Автор: AlexGyver Technologies, 2018
   http://AlexGyver.ru/
 */
+
+// Версия прошивки 1.5, совместима с приложением версии 1.5
 
 // **************** НАСТРОЙКИ ****************
 // чем больше матрица и количество частиц (эффекты) или длина текста (MAX_TEXT),

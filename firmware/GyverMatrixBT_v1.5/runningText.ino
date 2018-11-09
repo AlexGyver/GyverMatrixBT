@@ -1,7 +1,5 @@
 // работа с бегущим текстом
 
-// чем больше матрица и MAX_TEXT, тем выше шанс того, что всё зависнет!
-#define MAX_TEXT 20       // максимальная длина бегущей строки (русский символ занимает 2 байта!!!)
 #define TEXT_DIRECTION 1  // 1 - по горизонтали, 0 - по вертикали
 #define MIRR_V 0          // отразить текст по вертикали (0 / 1)
 #define MIRR_H 0          // отразить текст по горизонтали (0 / 1)
@@ -11,40 +9,28 @@
 #define LET_HEIGHT 8      // высота буквы шрифта
 #define SPACE 1           // пробел
 
-byte string_length;
-int offset, stop_pos;
-byte string_byte[MAX_TEXT];
+int offset = WIDTH;
 
-// вот она, вот она жесть! Английские символы (латиница) кодируются 
-// одним байтом, а русские - двумя! Поэтому для отображения русских букв
-// используем вот такой хитрющий алгоритм. Привет Вольтнику! Я помогал
-// ему с этим алгоритмом для проекта GSM Pager =)
-void initString() {
-  int i = 0, j = 0;
-  while (runningText[i] != '\0') {
-    if ((byte)runningText[i] > 191) {
-      i++;
-      continue;
-    } else {
-      string_byte[j] = (byte)runningText[i];
-      j++;
-      i++;
-    }
-    if (j >= MAX_TEXT - 1) break;   // защита от переполнения массива
+void fillString(String text) {
+  if (loadingFlag) {
+    offset = WIDTH;
+    loadingFlag = false;
   }
-  string_length = j;
-  offset = WIDTH;
-  stop_pos = -string_length * (LET_WIDTH + SPACE);
-}
-
-void fillString() {
   if (scrollTimer.isReady()) {
     FastLED.clear();
-    for (int i = 0; i < string_length; i++) {
-      drawLetter(string_byte[i], offset + i * (LET_WIDTH + SPACE));
+    byte i = 0, j = 0;
+    while (text[i] != '\0') {
+      if ((byte)text[i] > 191) {    // работаем с русскими буквами!
+        i++;
+      } else {
+        drawLetter(text[i], offset + j * (LET_WIDTH + SPACE));
+        i++;
+        j++;
+      }
     }
+
     offset--;
-    if (offset < stop_pos) {
+    if (offset < -j * (LET_WIDTH + SPACE)) {    // строка убежала
       offset = WIDTH;
     }
     FastLED.show();
@@ -96,10 +82,10 @@ uint8_t getFont(uint8_t font, uint8_t row) {
 }
 
 /*
-// интерпретатор кода символа по ASCII в его номер в массиве fontHEX (для Arduino IDE до 1.6.*)
-uint8_t getFontOld(uint8_t font, uint8_t row) {
+  // интерпретатор кода символа по ASCII в его номер в массиве fontHEX (для Arduino IDE до 1.6.*)
+  uint8_t getFontOld(uint8_t font, uint8_t row) {
   font = font - '0' + 16;   // перевод код символа из таблицы ASCII в номер согласно нумерации массива
   if (font < 126) return pgm_read_byte(&(fontHEX[font][row]));   // для английских букв и символов
   else return pgm_read_byte(&(fontHEX[font - 65][row]));         // для русских букв и символов (смещение -65 по массиву)
-}
+  }
 */

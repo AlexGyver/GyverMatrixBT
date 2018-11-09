@@ -82,12 +82,8 @@ GButton bt_up(BUTT_UP);
 GButton bt_down(BUTT_DOWN);
 #endif
 
-//#include <SoftwareSerial.h>
-//SoftwareSerial btSerial(12, 13); // TX, RX
-
 void setup() {
   Serial.begin(9600);
-  //btSerial.begin(9600);
 
   // настройки ленты
   FastLED.addLeds<WS2812, LED_PIN, GRB>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
@@ -102,7 +98,7 @@ void loop() {
   parsing();       				            // функция парсинга
 
   if (!parseStarted) {                // на время принятия данных матрицу не обновляем!
-    if (runningFlag) fillString();    // бегущая строка
+    if (runningFlag) fillString(runningText);    // бегущая строка
     if (gameFlag) games();            // игры
     if (effectsFlag) effects();       // эффекты
   }
@@ -258,7 +254,8 @@ void parsing() {
         }
         break;
       case 6:
-        initString();
+        loadingFlag = true;
+        // строка принимается в переменную runningText
         break;
       case 7:
         if (intData[1] == 1) runningFlag = true;

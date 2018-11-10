@@ -62,7 +62,7 @@ boolean effectsFlag;
 byte game;
 byte effect;
 boolean buttons[4];
-byte globalBrightness = BRIGHTNESS;;
+byte globalBrightness = BRIGHTNESS;
 boolean parseStarted;
 byte globalSpeed = 200;
 uint32_t globalColor = 0x00ff00;   // цвет при запуске зелёный
@@ -160,6 +160,7 @@ void effects() {
       case 9: wavesRoutine();
         break;
     }
+    FastLED.show();
   }
 }
 

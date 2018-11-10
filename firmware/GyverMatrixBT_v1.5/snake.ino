@@ -1,9 +1,11 @@
 // игра змейка!
 
+// **************** НАСТРОЙКИ ****************
 #define START_LENGTH 4    // начальная длина змейки
-#define MAX_LENGTH 30     // максимальная длина змейки
-#define DEMO_SNAKE 0      // демо режим
+#define MAX_LENGTH 80     // максимальная длина змейки
+#define DEMO_SNAKE 0      // демо режим (в этой версии не дописан)
 
+// **************** ДЛЯ РАЗРАБОТЧИКОВ ****************
 int8_t vectorX, vectorY;
 int8_t headX, headY, buttX, buttY;
 int8_t appleX, appleY;

@@ -23,6 +23,9 @@
 #define TAIL_STEP 30      // длина хвоста кометы
 #define SATURATION 150    // насыщенность кометы (от 0 до 255)
 
+// эффект конфетти
+#define DENSE 3           // плотность конфетти
+
 // --------------------- ДЛЯ РАЗРАБОТЧИКОВ ----------------------
 
 // *********** "дыхание" яркостью ***********
@@ -490,9 +493,13 @@ void starfallRoutine() {
 
 // рандомные гаснущие вспышки
 void sparklesRoutine() {
-  if (effectTimer.isReady()) {    
-    leds[getPixelNumber(random(0, WIDTH), random(0, HEIGHT))] = CHSV(random(0, 255), 255, 255);
-    leds[getPixelNumber(random(0, WIDTH), random(0, HEIGHT))] = CHSV(random(0, 255), 255, 255);
+  if (effectTimer.isReady()) {
+    for (byte i = 0; i < DENSE; i++) {
+      byte x = random(0, WIDTH);
+      byte y = random(0, HEIGHT);
+      if (getPixColorXY(x, y) == 0)
+        leds[getPixelNumber(x, y)] = CHSV(random(0, 255), 255, 255);
+    }
     fader();
   }
 }

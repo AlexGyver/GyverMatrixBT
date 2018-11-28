@@ -56,6 +56,8 @@ void effects() {
       break;
     case 10: starfallRoutine();
       break;
+	  case 11: sparklesRoutine();
+      break;
   }
   FastLED.show();
 }

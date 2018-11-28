@@ -122,7 +122,7 @@ void ballRoutine() {
 // *********** радуга заливка ***********
 void rainbowRoutine() {
   if (effectTimer.isReady()) {
-    hue++;
+    hue += 3;
     for (byte i = 0; i < WIDTH; i++) {
       CHSV thisColor = CHSV((byte)(hue + i * float(255 / WIDTH)), 255, 255);
       for (byte j = 0; j < HEIGHT; j++)

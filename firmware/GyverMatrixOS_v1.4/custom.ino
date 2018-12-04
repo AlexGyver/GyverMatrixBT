@@ -206,6 +206,7 @@ void btnsModeChange() {
       thisMode++;
       if (thisMode >= MODES_AMOUNT) thisMode = 0;
       loadingFlag = true;
+      gamemodeFlag = false;
       FastLED.clear();
       FastLED.show();
     }
@@ -215,6 +216,7 @@ void btnsModeChange() {
       thisMode--;
       if (thisMode < 0) thisMode = MODES_AMOUNT - 1;
       loadingFlag = true;
+      gamemodeFlag = false;
       FastLED.clear();
       FastLED.show();
     }

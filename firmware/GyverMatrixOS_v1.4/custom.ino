@@ -148,7 +148,11 @@ void loadImage(uint16_t (*frame)[WIDTH]) {
 // ********************* ОСНОВНОЙ ЦИКЛ РЕЖИМОВ *******************
 void customRoutine() {
   if (!BTcontrol) {
-    if (effectTimer.isReady()) customModes();                    // режимы крутятся, пиксели мутятся
+    if (!gamemodeFlag) {
+      if (effectTimer.isReady()) customModes();                    // режимы крутятся, пиксели мутятся
+    } else {
+      customModes();
+    }
     btnsModeChange();
   }
 

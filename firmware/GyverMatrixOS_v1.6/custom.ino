@@ -230,9 +230,8 @@ void customRoutine() {
         if (!loadingFlag && overlayFlag && needUnwrap() && modeCode != 0) clockOverlayUnwrap(0, 5);
         if (loadingFlag) loadFlag2 = true;
         customModes();                // режимы крутятся, пиксели мутятся
-
         if (overlayFlag && modeCode != 0) clockOverlayWrap(CLOCK_X, CLOCK_Y);
-#if (OVERLAY_CLOCK == 1)
+#if (OVERLAY_CLOCK == 1 && USE_CLOCK == 1)
         if (loadFlag2) {
           setOverlayColors();
           loadFlag2 = false;

@@ -1,10 +1,12 @@
 // свой список режимов
-#define SMOOTH_CHANGE 1     // плавная смена режимов через чёрный
 
-timerMinim gifTimer(D_GIF_SPEED);
+// ************************ НАСТРОЙКИ ************************
+#define SMOOTH_CHANGE 1     // плавная смена режимов через чёрный
+#define SHOW_FULL_TEXT 1  // не переключать режим, пока текст не покажется весь
 
 // подключаем внешние файлы с картинками
 //#include "bitmap2.h"
+
 
 /*
    Режимы:
@@ -49,7 +51,7 @@ timerMinim gifTimer(D_GIF_SPEED);
 
 */
 
-// ************** СВОЙ СПИСОК РЕЖИМОВ **************
+// ************************* СВОЙ СПИСОК РЕЖИМОВ ************************
 // количество кастомных режимов (которые сами переключаются или кнопкой)
 #define MODES_AMOUNT 25
 
@@ -119,6 +121,7 @@ void loadImage(uint16_t (*frame)[WIDTH]) {
   // 2) expandColor - расширяем цвет до 24 бит (спасибо adafruit)
   // 3) gammaCorrection - проводим коррекцию цвета для более корректного отображения
 }
+timerMinim gifTimer(D_GIF_SPEED);
 
 // ********************** ПРИМЕРЫ ВЫВОДА КАРТИНОК ***********************
 
@@ -227,10 +230,10 @@ void customRoutine() {
   if (!BTcontrol) {
     if (!gamemodeFlag) {
       if (effectTimer.isReady()) {
-        if (!loadingFlag && overlayFlag && needUnwrap() && modeCode != 0) clockOverlayUnwrap(0, 5);
+        if (!loadingFlag && !gamemodeFlag && needUnwrap() && modeCode != 0) clockOverlayUnwrap(CLOCK_X, CLOCK_Y);
         if (loadingFlag) loadFlag2 = true;
         customModes();                // режимы крутятся, пиксели мутятся
-        if (overlayFlag && modeCode != 0) clockOverlayWrap(CLOCK_X, CLOCK_Y);
+        if (!gamemodeFlag && modeCode != 0) clockOverlayWrap(CLOCK_X, CLOCK_Y);
 #if (OVERLAY_CLOCK == 1 && USE_CLOCK == 1)
         if (loadFlag2) {
           setOverlayColors();
@@ -250,13 +253,21 @@ void customRoutine() {
   }
 
   if (idleState) {
-    if (autoplayTimer.isReady() && AUTOPLAY) {    // таймер смены режима
-      nextMode();
+    if (millis() - autoplayTimer > autoplayTime && AUTOPLAY) {    // таймер смены режима
+      if (modeCode == 0 && SHOW_FULL_TEXT) {    // режим текста
+        if (fullTextFlag) {
+          autoplayTimer = millis();
+          nextMode();
+        }
+      } else {
+        autoplayTimer = millis();
+        nextMode();
+      }
     }
   } else {
     if (idleTimer.isReady()) {      // таймер холостого режима
       idleState = true;
-      autoplayTimer.reset();
+      autoplayTimer = millis();
       gameDemo = true;
 
       gameSpeed = DEMO_GAME_SPEED;
@@ -276,12 +287,10 @@ void btnsModeChange() {
   if (bt_set.clicked(&commonBtnTimer)) {
     if (gamemodeFlag) gameDemo = !gameDemo;
     if (gameDemo) {
-      overlayFlag = true;
       gameSpeed = DEMO_GAME_SPEED;
       gameTimer.setInterval(gameSpeed);
       AUTOPLAY = false;
     } else {
-      overlayFlag = false;
       gameSpeed = D_GAME_SPEED;
       gameTimer.setInterval(gameSpeed);
       AUTOPLAY = false;
@@ -292,18 +301,18 @@ void btnsModeChange() {
   }
   if (gameDemo) {
     if (bt_right.clicked(&commonBtnTimer)) {
-      autoplayTimer.reset();
+      autoplayTimer = millis();
       nextMode();
     }
 
     if (bt_left.clicked(&commonBtnTimer)) {
-      autoplayTimer.reset();
+      autoplayTimer = millis();
       prevMode();
     }
 
     if (bt_up.clicked(&commonBtnTimer)) {
       AUTOPLAY = true;
-      autoplayTimer.reset();
+      autoplayTimer = millis();
     }
     if (bt_down.clicked(&commonBtnTimer)) {
       AUTOPLAY = false;

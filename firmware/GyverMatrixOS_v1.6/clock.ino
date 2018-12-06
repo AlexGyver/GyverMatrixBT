@@ -2,7 +2,7 @@
 
 // ****************** НАСТРОЙКИ ЧАСОВ *****************
 #define OVERLAY_CLOCK 1     // часы на фоне всех эффектов и игр. Жрёт SRAM память!
-#define CLOCK_ORIENT 1      // 0 горизонтальные, 1 вертикальные
+#define CLOCK_ORIENT 0      // 0 горизонтальные, 1 вертикальные
 #define CLOCK_X 0           // позиция часов по X (начало координат - левый нижний угол)
 #define CLOCK_Y 0           // позиция часов по Y (начало координат - левый нижний угол)
 #define WALKING_CLOCK 1     // часы бегают по экрану в clockRoutine()
@@ -109,66 +109,6 @@ void clockTicker() {
     hrs = 10; mins = 25;
   }
 }
-#else
-void clockRoutine() {
-  return;
-}
-#endif
-
-#if (OVERLAY_CLOCK == 1 && USE_CLOCK == 1)
-#if (CLOCK_ORIENT == 0)
-void clockOverlayWrap(byte posX, byte posY) {
-  byte thisLED = 0;
-  for (byte i = posX; i < posX + 15; i++) {
-    for (byte j = posY; j < posY + 5; j++) {
-      overlayLEDs[thisLED] = leds[getPixelNumber(i, j)];
-      thisLED++;
-    }
-  }
-  clockTicker();
-  drawClock(hrs, mins, dotFlag, posX, posY);
-}
-void clockOverlayUnwrap(byte posX, byte posY) {
-  byte thisLED = 0;
-  for (byte i = posX; i < posX + 15; i++) {
-    for (byte j = posY; j < posY + 5; j++) {
-      leds[getPixelNumber(i, j)] = overlayLEDs[thisLED];
-      thisLED++;
-    }
-  }
-}
-#elif (CLOCK_ORIENT == 1)
-void clockOverlayWrap(byte posX, byte posY) {
-  byte thisLED = 0;
-  for (byte i = posX; i < posX + 7; i++) {
-    for (byte j = posY; j < posY + 10; j++) {
-      overlayLEDs[thisLED] = leds[getPixelNumber(i, j)];
-      thisLED++;
-    }
-  }
-  clockTicker();
-  drawClock(hrs, mins, dotFlag, posX, posY);
-}
-void clockOverlayUnwrap(byte posX, byte posY) {
-  byte thisLED = 0;
-  for (byte i = posX; i < posX + 7; i++) {
-    for (byte j = posY; j < posY + 10; j++) {
-      leds[getPixelNumber(i, j)] = overlayLEDs[thisLED];
-      thisLED++;
-    }
-  }
-}
-#endif
-
-boolean needUnwrap() {
-  if (modeCode == 12 ||
-      modeCode == 13 ||
-      modeCode == 14 ||
-      modeCode == 15 ||
-      modeCode == 17 ||
-      modeCode == 20) return true;
-  else return false;
-}
 
 boolean needColor() {
   if (modeCode == 1 ||
@@ -178,6 +118,67 @@ boolean needColor() {
       modeCode == 14 ||
       modeCode == 15 ||
       modeCode == 16 ||
+      modeCode == 17 ||
+      modeCode == 20) return true;
+  else return false;
+}
+
+#else
+void clockRoutine() {
+  return;
+}
+#endif
+
+#if (CLOCK_ORIENT == 0 && USE_CLOCK == 1 && OVERLAY_CLOCK == 1)
+void clockOverlayWrap(byte posX, byte posY) {
+  byte thisLED = 0;
+  for (byte i = posX; i < posX + 15; i++) {
+    for (byte j = posY; j < posY + 5; j++) {
+      overlayLEDs[thisLED] = leds[getPixelNumber(i, j)];
+      thisLED++;
+    }
+  }
+  clockTicker();
+  drawClock(hrs, mins, dotFlag, posX, posY);
+}
+void clockOverlayUnwrap(byte posX, byte posY) {
+  byte thisLED = 0;
+  for (byte i = posX; i < posX + 15; i++) {
+    for (byte j = posY; j < posY + 5; j++) {
+      leds[getPixelNumber(i, j)] = overlayLEDs[thisLED];
+      thisLED++;
+    }
+  }
+}
+#elif (CLOCK_ORIENT == 1 && USE_CLOCK == 1 && OVERLAY_CLOCK == 1)
+void clockOverlayWrap(byte posX, byte posY) {
+  byte thisLED = 0;
+  for (byte i = posX; i < posX + 7; i++) {
+    for (byte j = posY; j < posY + 10; j++) {
+      overlayLEDs[thisLED] = leds[getPixelNumber(i, j)];
+      thisLED++;
+    }
+  }
+  clockTicker();
+  drawClock(hrs, mins, dotFlag, posX, posY);
+}
+void clockOverlayUnwrap(byte posX, byte posY) {
+  byte thisLED = 0;
+  for (byte i = posX; i < posX + 7; i++) {
+    for (byte j = posY; j < posY + 10; j++) {
+      leds[getPixelNumber(i, j)] = overlayLEDs[thisLED];
+      thisLED++;
+    }
+  }
+}
+#endif
+
+#if (OVERLAY_CLOCK == 1 && USE_CLOCK == 1)
+boolean needUnwrap() {
+  if (modeCode == 12 ||
+      modeCode == 13 ||
+      modeCode == 14 ||
+      modeCode == 15 ||
       modeCode == 17 ||
       modeCode == 20) return true;
   else return false;

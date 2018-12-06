@@ -58,6 +58,7 @@ boolean AUTOPLAY = 1;        // 0 выкл / 1 вкл автоматическу
 #define FONT_TYPE 1           // (0 / 1) два вида маленького шрифта в выводе игрового счёта
 
 // ****************** ПИНЫ ПОДКЛЮЧЕНИЯ *******************
+
 #define LED_PIN 6           // пин ленты
 
 #define BUTT_UP 3           // кнопка вверх
@@ -66,16 +67,26 @@ boolean AUTOPLAY = 1;        // 0 выкл / 1 вкл автоматическу
 #define BUTT_RIGHT 2        // кнопка вправо
 #define BUTT_SET 7          // кнопка выбор/игра
 
+/*
+  #define LED_PIN 5           // пин ленты
+
+  #define BUTT_UP 0           // кнопка вверх
+  #define BUTT_DOWN 2         // кнопка вниз
+  #define BUTT_LEFT 14         // кнопка влево
+  #define BUTT_RIGHT 12        // кнопка вправо
+  #define BUTT_SET 4          // кнопка выбор/игра
+*/
+
 // ************** ОТКЛЮЧЕНИЕ КОМПОНЕНТОВ СИСТЕМЫ (для экономии памяти) *************
 #define USE_BUTTONS 1       // использовать физические кнопки управления играми (0 нет, 1 да)
 #define BT_MODE 0           // использовать блютус (0 нет, 1 да)
 #define USE_NOISE_EFFECTS 1 // крутые полноэкранные эффекты (0 нет, 1 да) СИЛЬНО ЖРУТ ПАМЯТЬ!!!11
 #define USE_FONTS 1         // использовать буквы (бегущая строка) (0 нет, 1 да)
-#define USE_CLOCK 0         // использовать часы (0 нет, 1 да)
+#define USE_CLOCK 1         // использовать часы (0 нет, 1 да)
 
 #define USE_TETRIS 1        // тетрис (0 нет, 1 да)
-#define USE_SNAKE 0         // змейка (0 нет, 1 да)
-#define USE_MAZE 0          // лабиринт (0 нет, 1 да)
+#define USE_SNAKE 1         // змейка (0 нет, 1 да)
+#define USE_MAZE 1          // лабиринт (0 нет, 1 да)
 
 // ******************************** ДЛЯ РАЗРАБОТЧИКОВ ********************************
 #define DEBUG 0
@@ -104,15 +115,17 @@ boolean mazeMode = false;
 int effects_speed = D_EFFECT_SPEED;
 int8_t hrs, mins, secs;
 boolean dotFlag;
-boolean overlayFlag = true;
 byte modeCode;
+boolean fullTextFlag = false;
 
 #if (USE_FONTS == 1)
 #include "fonts.h"
 #endif
 
+#define autoplayTime ((long)AUTOPLAY_PERIOD * 1000)
+uint32_t autoplayTimer;
+
 #include "timerMinim.h"
-timerMinim autoplayTimer((long)AUTOPLAY_PERIOD * 1000);
 timerMinim effectTimer(D_EFFECT_SPEED);
 timerMinim gameTimer(DEMO_GAME_SPEED);
 timerMinim scrollTimer(D_TEXT_SPEED);

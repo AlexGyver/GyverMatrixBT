@@ -20,6 +20,7 @@ void fillString(String text, uint32_t color) {
   if (loadingFlag) {
     offset = WIDTH;   // перемотка в правый край
     loadingFlag = false;
+    fullTextFlag = false;
     modeCode = 0;
   }
   
@@ -39,6 +40,7 @@ void fillString(String text, uint32_t color) {
     offset--;
     if (offset < -j * (LET_WIDTH + SPACE)) {    // строка убежала
       offset = WIDTH;
+      fullTextFlag = true;
     }
     FastLED.show();
   }
@@ -94,6 +96,7 @@ uint8_t getFont(uint8_t font, uint8_t row) {
 
 #elif (USE_FONTS == 0)
 void fillString(String text, uint32_t color) {
+  fullTextFlag = false;
   modeCode = 0;
   return;
 }

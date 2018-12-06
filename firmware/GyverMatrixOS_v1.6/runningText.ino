@@ -19,8 +19,7 @@ int offset = WIDTH;
 void fillString(String text, uint32_t color) {
   if (loadingFlag) {
     offset = WIDTH;   // перемотка в правый край
-    loadingFlag = false;
-    fullTextFlag = false;
+    loadingFlag = false;    
     modeCode = 0;
   }
   
@@ -36,10 +35,11 @@ void fillString(String text, uint32_t color) {
         j++;
       }
     }
+    fullTextFlag = false;
 
     offset--;
     if (offset < -j * (LET_WIDTH + SPACE)) {    // строка убежала
-      offset = WIDTH;
+      offset = WIDTH + 3;
       fullTextFlag = true;
     }
     FastLED.show();

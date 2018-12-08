@@ -95,6 +95,15 @@ void games() {
     case 2:
       mazeRoutine();
       break;
+    case 3:
+      runnerRoutine();
+      break;
+    case 4:
+      flappyRoutine();
+      break;
+    case 5:
+      arkanoidRoutine();
+      break;
   }
 }
 

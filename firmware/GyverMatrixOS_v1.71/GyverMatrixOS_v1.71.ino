@@ -10,9 +10,11 @@
 */
 
 // GyverMatrixOS
-// Версия прошивки 1.7, совместима с приложением GyverMatrixBT версии 1.8 и выше
+// Версия прошивки 1.71, совместима с приложением GyverMatrixBT версии 1.8 и выше
 
 // ************************ МАТРИЦА *************************
+// если прошивка не лезет в Arduino NANO - отключай режимы! Строка 53 и ниже
+
 #define BRIGHTNESS 150        // стандартная маскимальная яркость (0-255)
 #define CURRENT_LIMIT 2000    // лимит по току в миллиамперах, автоматически управляет яркостью (пожалей свой блок питания!) 0 - выключить лимит
 
@@ -25,7 +27,10 @@
 // при неправильной настрйоке матрицы вы получите предупреждение "Wrong matrix parameters! Set to default"
 // шпаргалка по настройке матрицы здесь! https://alexgyver.ru/matrix_guide/
 
-#define MCU_TYPE 0            // микроконтроллер 0 - AVR, 1 - ESP8266, 2 - STM32
+#define MCU_TYPE 0            // микроконтроллер: 
+//                            0 - AVR (Arduino NANO/MEGA/UNO)
+//                            1 - ESP8266 (NodeMCU, Wemos D1)
+//                            2 - STM32 (Blue Pill)
 
 // ******************** ЭФФЕКТЫ И РЕЖИМЫ ********************
 #define D_TEXT_SPEED 100      // скорость бегущего текста по умолчанию (мс)
@@ -135,7 +140,7 @@ timerMinim idleTimer((long)IDLE_TIME * 1000);
 timerMinim changeTimer(70);
 timerMinim halfsecTimer(500);
 
-#if (USE_CLOCK == 1 && MCU_TYPE == 0)
+#if (USE_CLOCK == 1 && (MCU_TYPE == 0 || MCU_TYPE == 1))
 #include <Wire.h>
 #include "RTClib.h"
 
@@ -148,7 +153,7 @@ void setup() {
   Serial.begin(9600);
 #endif
 
-#if (USE_CLOCK == 1 && MCU_TYPE == 0)
+#if (USE_CLOCK == 1 && (MCU_TYPE == 0 || MCU_TYPE == 1))
   rtc.begin();
   if (rtc.lostPower()) {
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));

@@ -75,7 +75,7 @@ void drawClock(byte hrs, byte mins, boolean dots, byte X, byte Y) {
 
 void clockRoutine() {
   if (loadingFlag) {
-#if (MCU_TYPE == 0)
+#if (MCU_TYPE == 0 || MCU_TYPE == 1)
     DateTime now = rtc.now();
     secs = now.second();
     mins = now.minute();
@@ -99,7 +99,7 @@ void clockTicker() {
       if (secs > 59) {      // каждую минуту
         secs = 0;
         mins++;
-#if (MCU_TYPE == 0)
+#if (MCU_TYPE == 0 || MCU_TYPE == 1)
         DateTime now = rtc.now();
         secs = now.second();
         mins = now.minute();

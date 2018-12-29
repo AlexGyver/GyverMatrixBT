@@ -249,17 +249,21 @@ void customRoutine() {
     if (!gamemodeFlag) {
       if (effectTimer.isReady()) {
 #if (OVERLAY_CLOCK == 1 && USE_CLOCK == 1)
-        if (!loadingFlag && !gamemodeFlag && needUnwrap() && modeCode != 0) clockOverlayUnwrap(CLOCK_X, CLOCK_Y);
-        if (loadingFlag) loadFlag2 = true;
+        if (overlayAllowed()) {
+          if (!loadingFlag && !gamemodeFlag && needUnwrap() && modeCode != 0) clockOverlayUnwrap(CLOCK_X, CLOCK_Y);
+          if (loadingFlag) loadFlag2 = true;
+        }
 #endif
 
         customModes();                // режимы крутятся, пиксели мутятся
 
 #if (OVERLAY_CLOCK == 1 && USE_CLOCK == 1)
-        if (!gamemodeFlag && modeCode != 0) clockOverlayWrap(CLOCK_X, CLOCK_Y);
-        if (loadFlag2) {
-          setOverlayColors();
-          loadFlag2 = false;
+        if (overlayAllowed()) {
+          if (!gamemodeFlag && modeCode != 0) clockOverlayWrap(CLOCK_X, CLOCK_Y);
+          if (loadFlag2) {
+            setOverlayColors();
+            loadFlag2 = false;
+          }
         }
 #endif
         loadingFlag = false;

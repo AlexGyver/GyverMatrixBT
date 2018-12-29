@@ -1,11 +1,10 @@
 // режим часов
 
 // ****************** НАСТРОЙКИ ЧАСОВ *****************
-#define OVERLAY_CLOCK 0     // часы на фоне всех эффектов и игр. Жрёт SRAM память!
+#define OVERLAY_CLOCK 1     // часы на фоне всех эффектов и игр. Жрёт SRAM память!
 #define CLOCK_ORIENT 0      // 0 горизонтальные, 1 вертикальные
 #define CLOCK_X 0           // позиция часов по X (начало координат - левый нижний угол)
 #define CLOCK_Y 6           // позиция часов по Y (начало координат - левый нижний угол)
-#define WALKING_CLOCK 1     // часы бегают по экрану в clockRoutine()
 #define COLOR_MODE 2        // Режим цвета часов
 //                          0 - заданные ниже цвета
 //                          1 - радужная смена (каждая цифра)
@@ -18,7 +17,38 @@
 #define HUE_STEP 5          // шаг цвета часов в режиме радужной смены
 #define HUE_GAP 30          // шаг цвета между цифрами в режиме радужной смены
 
+// эффекты, в которых отображаются часы в наложении
+byte overlayList[] = {
+  MADNESS_NOISE,
+  OCEAN_NOISE,
+};
+
+/*
+   Список режимов:
+  GAME_MODE
+  MADNESS_NOISE
+  CLOUD_NOISE
+  LAVA_NOISE
+  PLASMA_NOISE
+  RAINBOW_NOISE
+  RAINBOWSTRIPE_NOISE
+  ZEBRA_NOISE
+  FOREST_NOISE
+  OCEAN_NOISE
+  SNOW_ROUTINE
+  SPARKLES_ROUTINE
+  MATRIX_ROUTINE
+  STARFALL_ROUTINE
+  BALL_ROUTINE
+  BALLS_ROUTINE
+  RAINBOW_ROUTINE
+  RAINBOWDIAGONAL_ROUTINE
+  FIRE_ROUTINE
+  IMAGE_MODE
+*/
+
 // ****************** ДЛЯ РАЗРАБОТЧИКОВ ****************
+byte listSize = sizeof(overlayList);
 byte clockHue;
 #if (OVERLAY_CLOCK == 1 && CLOCK_ORIENT == 0)
 CRGB overlayLEDs[75];
@@ -28,6 +58,12 @@ CRGB overlayLEDs[70];
 
 #if (USE_CLOCK == 1)
 CRGB clockLED[5] = {CRGB::White, CRGB::White, CRGB::Red, CRGB::White, CRGB::White};
+
+boolean overlayAllowed() {
+  for (byte i = 0; i < listSize; i++)
+    if (modeCode == overlayList[i]) return true;
+  return false;
+}
 
 void clockColor() {
   if (COLOR_MODE == 0) {
@@ -84,13 +120,13 @@ void clockRoutine() {
     loadingFlag = false;
     modeCode = 1;
   }
-  
+
   FastLED.clear();
   if (!clockSet) {
     clockTicker();
     drawClock(hrs, mins, dotFlag, CLOCK_X, CLOCK_Y);
   } else {
-    if (halfsecTimer.isReady()) {      
+    if (halfsecTimer.isReady()) {
       dotFlag = !dotFlag;
       if (dotFlag) clockColor();
       else for (byte i = 0; i < 5; i++) clockLED[i].fadeToBlackBy(190);

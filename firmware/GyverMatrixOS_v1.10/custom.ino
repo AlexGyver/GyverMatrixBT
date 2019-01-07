@@ -158,17 +158,8 @@ timerMinim gifTimer(D_GIF_SPEED);
   void animation1() {
   if (gifTimer.isReady()) {
     frameNum++;
-    if (frameNum >= 4) frameNum = 0;
-    switch (frameNum) {
-      case 0: loadImage(frame00);
-        break;
-      case 1: loadImage(frame01);
-        break;
-      case 2: loadImage(frame02);
-        break;
-      case 3: loadImage(frame03);
-        break;
-    }
+    if (frameNum >= sizeof(framesArray)) frameNum = 0;
+    loadImage(framesArray[frameNum]);
   }
   }
 */

@@ -1098,3 +1098,15 @@ const uint16_t frame99[][8] PROGMEM = {
   {0xDEDC, 0xDEDC, 0xDEDC, 0xDEDC, 0xDEDC, 0xDEDC, 0xDEDC, 0xDEDC },
 };
 
+const uint16_t framesArray[100] = {
+  frame00, frame01, frame02, frame03, frame04, frame05, frame06, frame07, frame08, frame09, 
+  frame10, frame11, frame12, frame13, frame14, frame15, frame16, frame17, frame18, frame19, 
+  frame20, frame21, frame22, frame23, frame24, frame25, frame26, frame27, frame28, frame29, 
+  frame30, frame31, frame32, frame33, frame34, frame35, frame36, frame37, frame38, frame39, 
+  frame40, frame41, frame42, frame43, frame44, frame45, frame46, frame47, frame48, frame49, 
+  frame50, frame51, frame52, frame53, frame54, frame55, frame56, frame57, frame58, frame59, 
+  frame60, frame61, frame62, frame63, frame64, frame65, frame66, frame67, frame68, frame69, 
+  frame70, frame71, frame72, frame73, frame74, frame75, frame76, frame77, frame78, frame79, 
+  frame80, frame81, frame82, frame83, frame84, frame85, frame86, frame87, frame88, frame89, 
+  frame90, frame91, frame92, frame93, frame94, frame95, frame96, frame97, frame98, frame99, 
+  };

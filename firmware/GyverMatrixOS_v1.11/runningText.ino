@@ -24,7 +24,8 @@ void fillString(String text, uint32_t color) {
     fullTextFlag = false;
   }
   
-  if (scrollTimer.isReady() || (!BTcontrol && !gamemodeFlag)) {
+  //if (scrollTimer.isReady() || (!BTcontrol && !gamemodeFlag)) {
+  if (scrollTimer.isReady() {
     FastLED.clear();
     byte i = 0, j = 0;
     while (text[i] != '\0') {
@@ -43,7 +44,7 @@ void fillString(String text, uint32_t color) {
       offset = WIDTH + 3;
       fullTextFlag = true;
     }
-    FastLED.show();
+    //FastLED.show();
   }
 }
 
@@ -72,10 +73,10 @@ void drawLetter(uint8_t index, uint8_t letter, int16_t offset, uint32_t color) {
       // рисуем столбец (i - горизонтальная позиция, j - вертикальная)
       if (TEXT_DIRECTION) {
         if (thisBit) leds[getPixelNumber(offset + i, TEXT_HEIGHT + j)] = letterColor;
-        else drawPixelXY(offset + i, TEXT_HEIGHT + j, 0x000000);
+        //else drawPixelXY(offset + i, TEXT_HEIGHT + j, 0x000000);
       } else {
         if (thisBit) leds[getPixelNumber(i, offset + TEXT_HEIGHT + j)] = letterColor;
-        else drawPixelXY(i, offset + TEXT_HEIGHT + j, 0x000000);
+        //else drawPixelXY(i, offset + TEXT_HEIGHT + j, 0x000000);
       }
 
     }

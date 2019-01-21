@@ -62,6 +62,7 @@ int AUTOPLAY_PERIOD = 10;     // время между авто сменой р�
 #define USE_NOISE_EFFECTS 1   // крутые полноэкранные эффекты (0 нет, 1 да) СИЛЬНО ЖРУТ ПАМЯТЬ!!!11
 #define USE_FONTS 1           // использовать буквы (бегущая строка) (0 нет, 1 да)
 #define USE_CLOCK 0           // использовать часы (0 нет, 1 да)
+#define USE_RTC 0             // использовать часы реального времени (0 нет, 1 да)
 
 // игры
 #define USE_SNAKE 0           // игра змейка (0 нет, 1 да)
@@ -132,6 +133,8 @@ int AUTOPLAY_PERIOD = 10;     // время между авто сменой р�
 #define FASTLED_INTERRUPT_RETRY_COUNT 0
 #define FASTLED_ALLOW_INTERRUPTS 0
 #include <ESP8266WiFi.h>
+#include <WiFiUdp.h>
+#include <OldTime.h>
 #endif
 
 #include "FastLED.h"
@@ -177,11 +180,35 @@ timerMinim changeTimer(70);
 timerMinim halfsecTimer(500);
 
 #if (USE_CLOCK == 1 && (MCU_TYPE == 0 || MCU_TYPE == 1))
-#include <Wire.h>
-#include "RTClib.h"
 
+#include "RTClib.h"
+#if (USE_RTC == 1)
+#include <Wire.h>
 RTC_DS3231 rtc;
 // RTC_DS1307 rtc;
+#endif
+#endif
+
+#if (MCU_TYPE == 1)
+  char ssid[] = "****";  //  SSID (имя) вашего роутера
+  char pass[] = "****";       // пароль роутера
+
+  boolean connected = false;
+  IPAddress timeServerIP; // time.nist.gov адрес сервера NTP
+  const char* ntpServerName = "time.nist.gov";
+  #define NTP_PACKET_SIZE 48 // NTP время в первых 48 байтах сообщения
+  #define SYNC_TIME_PERIOD 60
+  byte packetBuffer[ NTP_PACKET_SIZE]; //буффер для хранения входящих и исходящих пакетов
+
+  WiFiUDP udp;
+  const  long timeZoneOffset = 2L; // set this to the offset in seconds to your local time;
+  const long daylight = 1;
+  unsigned int localPort = 2390;      // local port to listen for UDP packets
+  long ntp_t = 0;
+  byte init_time = 0;
+  timerMinim WifiTimer(500);
+  
+  timerMinim NTPCheck(1000 * 60 * SYNC_TIME_PERIOD); // Сверяем время через SYNC_TIME_PERIOD минут
 #endif
 
 void setup() {
@@ -191,9 +218,11 @@ void setup() {
 
 #if (MCU_TYPE == 1)
   WiFi.setSleepMode(WIFI_NONE_SLEEP);
+  WiFi.begin(ssid, pass);
+  //Serial.begin(9600);
 #endif
 
-#if (USE_CLOCK == 1 && (MCU_TYPE == 0 || MCU_TYPE == 1))
+#if (USE_CLOCK == 1 && USE_RTC == 1 && (MCU_TYPE == 0 || MCU_TYPE == 1))
   rtc.begin();
   if (rtc.lostPower()) {
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));

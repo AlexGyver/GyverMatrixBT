@@ -304,6 +304,7 @@ void customRoutine() {
   }
 }
 
+#if (MCU_TYPE != 1)
 void timeSet(boolean type, boolean dir) {    // type: 0-часы, 1-минуты, dir: 0-уменьшить, 1-увеличить
   if (type) {
     if (dir) hrs++;
@@ -323,6 +324,7 @@ void timeSet(boolean type, boolean dir) {    // type: 0-часы, 1-минуты
   if (hrs > 23) hrs = 0;
   if (hrs < 0) hrs = 23;
 }
+#endif
 
 void btnsModeChange() {
 #if (USE_BUTTONS == 1)
@@ -345,7 +347,7 @@ void btnsModeChange() {
       clockSet = !clockSet;
       AUTOPLAY = false;
       secs = 0;
-#if (USE_CLOCK == 1)
+#if (USE_CLOCK == 1 && USE_RTC == 1)
       if (!clockSet) rtc.adjust(DateTime(2014, 1, 21, hrs, mins, 0)); // установка нового времени в RTC
 #endif
     }
@@ -359,7 +361,11 @@ void btnsModeChange() {
         autoplayTimer = millis();
         nextMode();
       } else {
+#if (MCU_TYPE == 1)
+        adjustTime(60);
+#else
         timeSet(1, 1);
+#endif
       }
     }
 
@@ -368,7 +374,11 @@ void btnsModeChange() {
         autoplayTimer = millis();
         prevMode();
       } else {
+#if (MCU_TYPE == 1)
+        adjustTime(-60);
+#else
         timeSet(1, 0);
+#endif
       }
     }
 
@@ -377,14 +387,22 @@ void btnsModeChange() {
         AUTOPLAY = true;
         autoplayTimer = millis();
       } else {
+#if (MCU_TYPE == 1)
+        adjustTime(3600);
+#else
         timeSet(0, 1);
+#endif
       }
     }
     if (bt_down.clicked()) {
       if (!clockSet) {
         AUTOPLAY = false;
       } else {
+#if (MCU_TYPE == 1)
+        adjustTime(-3600);
+#else
         timeSet(0, 0);
+#endif
       }
     }
 
@@ -395,7 +413,11 @@ void btnsModeChange() {
           if (effects_speed < 30) effects_speed = 30;
           effectTimer.setInterval(effects_speed);
         } else {
+#if (MCU_TYPE == 1)
+          adjustTime(60);
+#else
           timeSet(1, 1);
+#endif
         }
       }
     if (bt_left.holding())
@@ -405,7 +427,11 @@ void btnsModeChange() {
           if (effects_speed > 300) effects_speed = 300;
           effectTimer.setInterval(effects_speed);
         } else {
+#if (MCU_TYPE == 1)
+          adjustTime(-60);
+#else
           timeSet(1, 0);
+#endif
         }
       }
     if (bt_up.holding())
@@ -416,7 +442,11 @@ void btnsModeChange() {
           fadeBrightness = globalBrightness;
           FastLED.setBrightness(globalBrightness);
         } else {
+#if (MCU_TYPE == 1)
+          adjustTime(3600);
+#else
           timeSet(0, 1);
+#endif
         }
       }
     if (bt_down.holding())
@@ -427,7 +457,11 @@ void btnsModeChange() {
           fadeBrightness = globalBrightness;
           FastLED.setBrightness(globalBrightness);
         } else {
+#if (MCU_TYPE == 1)
+          adjustTime(-3600);
+#else
           timeSet(0, 0);
+#endif
         }
       }
   }

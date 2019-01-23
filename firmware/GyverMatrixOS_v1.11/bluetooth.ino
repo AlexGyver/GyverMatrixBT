@@ -275,8 +275,13 @@ void parsing() {
         if (haveIncomeData) {                
           // read the packet into packetBufffer
           int len = udp.read(incomeBuffer, UDP_TX_PACKET_MAX_SIZE);
-          if (len > 0) fromWiFi = true;
+          if (len > 0) {
+            fromWiFi = true;
+            incomeBuffer[len] =0;
+          }
           bufIdx = 0;
+          
+          delay(0);            // ESP8266 при вызове delay отпрабатывает стек IP протокола, дадим ему поработать        
 
           // Если управление через BT включено - Serial для коммуникации через BT,
           // если выключено - используем для вывода диагностики в монитор порта  
@@ -297,20 +302,28 @@ void parsing() {
           Serial.println(incomeBuffer);
         }
 #endif
-        if (parseMode == TEXT) {                         // если нужно принять строку          
-            runningText = String(&incomeBuffer[bufIdx]); // принимаем всю
+      }
+
+      if (haveIncomeData) {         
+        if (parseMode == TEXT) {                         // если нужно принять строку - принимаем всю
+            // Из за ошибки в компоненте UdpSender в Thunkable - теряются половина отправленных 
+            // символов, если их кодировка - двухбайтовый UTF8, т.к. оно вычисляет длину строки без учета двухбайтовости
+            // Чтобы символы не терялись - при отправке строки из андроид-программы, она добивается с конца пробелами
+            // Здесь эти конечные пробелы нужно предварительно удалить
+            while (packetSize > 0 && incomeBuffer[packetSize-1] == ' ') packetSize--;
+            incomeBuffer[packetSize] = 0;
+  
+            // Оставшийся буфер преобразуем с строку
+            runningText = String(&incomeBuffer[bufIdx]); // 
                       
             incomingByte = ending;                       // сразу завершаем парс
             parseMode = NORMAL;
             bufIdx = 0; 
             packetSize = 0;                              // все байты из входящего пакета обработаны
-        } else {
+          } else {
             incomingByte = incomeBuffer[bufIdx++];       // обязательно ЧИТАЕМ входящий символ
-        }        
-        delay(0);            // ESP8266 при вызове delay отпрабатывает стек IP протокола, дадим ему поработать        
-      } else {
-        incomingByte = incomeBuffer[bufIdx++];           // следующий входящий символ из буфера
-      }
+        } 
+      }       
     }
 #endif
 

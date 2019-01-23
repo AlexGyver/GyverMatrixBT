@@ -59,6 +59,70 @@ CRGB overlayLEDs[70];
 #if (USE_CLOCK == 1)
 CRGB clockLED[5] = {CRGB::White, CRGB::White, CRGB::Red, CRGB::White, CRGB::White};
 
+#if (MCU_TYPE == 1)
+// send an NTP request to the time server at the given address
+unsigned long sendNTPpacket(IPAddress& address)
+{
+  //Serial.println("sending NTP packet...");
+  // set all bytes in the buffer to 0
+  memset(packetBuffer, 0, NTP_PACKET_SIZE);
+  // Initialize values needed to form NTP request
+  // (see URL above for details on the packets)
+  packetBuffer[0] = 0b11100011;   // LI, Version, Mode
+  packetBuffer[1] = 0;     // Stratum, or type of clock
+  packetBuffer[2] = 6;     // Polling Interval
+  packetBuffer[3] = 0xEC;  // Peer Clock Precision
+  // 8 bytes of zero for Root Delay & Root Dispersion
+  packetBuffer[12]  = 49;
+  packetBuffer[13]  = 0x4E;
+  packetBuffer[14]  = 49;
+  packetBuffer[15]  = 52;
+
+  // all NTP fields have been given values, now
+  // you can send a packet requesting a timestamp:
+  udp.beginPacket(address, 123); //NTP requests are to port 123
+  udp.write(packetBuffer, NTP_PACKET_SIZE);
+  udp.endPacket();
+}
+
+void parseNTP() {
+  if (millis() - ntp_t > 3000) {
+    ntp_t = 0;
+    return;
+  }
+  int cb = udp.parsePacket();
+  if (!cb) {
+    return;
+  } else {
+    ntp_t = 0;
+    init_time = 1;
+    udp.read(packetBuffer, NTP_PACKET_SIZE); // read the packet into the buffer
+    unsigned long highWord = word(packetBuffer[40], packetBuffer[41]);
+    unsigned long lowWord = word(packetBuffer[42], packetBuffer[43]);
+    // combine the four bytes (two words) into a long integer
+    // this is NTP time (seconds since Jan 1 1900):
+    unsigned long secsSince1900 = highWord << 16 | lowWord;
+    // Unix time starts on Jan 1 1970. In seconds, that's 2208988800:
+    unsigned long seventyYears = 2208988800UL ;
+    //DateTime now = secsSince1900 - seventyYears + (timeZoneOffset + daylight) * 3600;
+    
+    time_t t = secsSince1900 - seventyYears + (timeZoneOffset) * 3600;
+    setTime(t);
+  }
+}
+
+void getNTP() {
+  if (!connected) {
+    return;
+  }
+  WiFi.hostByName(ntpServerName, timeServerIP);
+
+  sendNTPpacket(timeServerIP); // send an NTP packet to a time server
+  // wait to see if a reply is available
+  ntp_t = millis();
+}
+#endif
+
 boolean overlayAllowed() {
   for (byte i = 0; i < listSize; i++)
     if (modeCode == overlayList[i]) return true;
@@ -100,10 +164,19 @@ void drawClock(byte hrs, byte mins, boolean dots, byte X, byte Y) {
   }
   drawDigit3x5(mins / 10, X + 8, Y, clockLED[3]);
   drawDigit3x5(mins % 10, X + 12, Y, clockLED[4]);
-#else
-  if (hrs > 9) drawDigit3x5(hrs / 10, X, Y + 5, clockLED[0]);
-  drawDigit3x5(hrs % 10, X + 4, Y + 5, clockLED[1]);
-
+#else // Вертикальные часы
+  //if (hrs > 9) // Так реально красивей
+  drawDigit3x5(hrs / 10, X, Y + 6, clockLED[0]);
+  drawDigit3x5(hrs % 10, X + 4, Y + 6, clockLED[1]);
+  if (dots) { // Мигающие точки легко ассоциируются с часами
+    drawPixelXY(X + 1, Y + 5, clockLED[2]);
+    drawPixelXY(X + 5, Y + 5, clockLED[2]);
+  } else {
+    if (modeCode == 1) {
+      drawPixelXY(X + 1, Y + 5, 0);
+      drawPixelXY(X + 5, Y + 5, 0);
+    }
+  }
   drawDigit3x5(mins / 10, X, Y, clockLED[3]);
   drawDigit3x5(mins % 10, X + 4, Y, clockLED[4]);
 #endif
@@ -111,7 +184,7 @@ void drawClock(byte hrs, byte mins, boolean dots, byte X, byte Y) {
 
 void clockRoutine() {
   if (loadingFlag) {
-#if (MCU_TYPE == 0 || MCU_TYPE == 1)
+#if (USE_RTC == 1 && (MCU_TYPE == 0 || MCU_TYPE == 1))
     DateTime now = rtc.now();
     secs = now.second();
     mins = now.minute();
@@ -141,12 +214,15 @@ void clockTicker() {
     if (needColor()) clockColor();
 
     dotFlag = !dotFlag;
+// С библиотекой OldTime "закат солнца вручную" не нужен )
+#if (MCU_TYPE != 1)
     if (dotFlag) {          // каждую секунду пересчёт времени
       secs++;
       if (secs > 59) {      // каждую минуту
         secs = 0;
         mins++;
-#if (MCU_TYPE == 0 || MCU_TYPE == 1)
+
+#if (USE_RTC == 1 && (MCU_TYPE == 0 || MCU_TYPE == 1))
         DateTime now = rtc.now();
         secs = now.second();
         mins = now.minute();
@@ -159,6 +235,7 @@ void clockTicker() {
         if (hrs > 23) hrs = 0;  // сутки!
       }
     }
+#endif
   }
 }
 

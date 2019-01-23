@@ -10,8 +10,7 @@
 */
 
 // GyverMatrixOS
-// Версия прошивки 1.11, совместима с приложением GyverMatrixBT версии 1.12 и выше
-//                       управление через WiFi - c версии 1.6 и выше
+// Версия прошивки 1.12, совместима с приложением GyverMatrixBT версии 1.13 и выше
 
 // ************************ МАТРИЦА *************************
 // если прошивка не лезет в Arduino NANO - отключай режимы! Строка 60 и ниже
@@ -44,7 +43,7 @@
 #define DEMO_GAME_SPEED 60    // скорость игр в демо режиме (мс)
 
 boolean AUTOPLAY = 1;         // 0 выкл / 1 вкл автоматическую смену режимов (откл. можно со смартфона)
-int AUTOPLAY_PERIOD = 10;     // время между авто сменой режимов (секунды)
+int AUTOPLAY_PERIOD = 30;     // время между авто сменой режимов (секунды)
 #define IDLE_TIME 10          // время бездействия кнопок или Bluetooth (в секундах) после которого запускается автосмена режимов и демо в играх
 
 // о поддерживаемых цветах читай тут https://alexgyver.ru/gyvermatrixos-guide/
@@ -201,7 +200,7 @@ RTC_DS3231 rtc;
 #ifndef public 
 #include "WiFiNet.h"          // приватные данные и пароли доступа к WiFi сети
 #else
-  char ssid[] = "****";       //  SSID (имя) вашего роутера
+  char ssid[] = "****";       // SSID (имя) вашего роутера
   char pass[] = "****";       // пароль роутера
 #endif
 
@@ -210,12 +209,12 @@ RTC_DS3231 rtc;
   const char* ntpServerName = "time.nist.gov";
   #define NTP_PACKET_SIZE 48 // NTP время в первых 48 байтах сообщения
   #define SYNC_TIME_PERIOD 60
-  byte packetBuffer[ NTP_PACKET_SIZE]; //буффер для хранения входящих и исходящих пакетов
+  byte packetBuffer[ NTP_PACKET_SIZE]; // буффер для хранения входящих и исходящих пакетов
 
   WiFiUDP udp;
-  const  long timeZoneOffset = 2L; // set this to the offset in seconds to your local time;
-  const long daylight = 1;
-  unsigned int localPort = 2390;      // local port to listen for UDP packets
+  long timeZoneOffset = 2L;            // set this to the offset in seconds to your local time;
+  long daylight = 1;
+  unsigned int localPort = 2390;       // local port to listen for UDP packets
   long ntp_t = 0;
   byte init_time = 0;
   timerMinim WifiTimer(500);

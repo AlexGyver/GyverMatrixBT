@@ -1,6 +1,6 @@
 // вкладка работы с bluetooth
 
-#if (BT_MODE == 1)
+#if (BT_MODE == 1 || WIFI_MODE == 1)
 #define PARSE_AMOUNT 4    // максимальное количество значений в массиве, который хотим получить
 #define header '$'        // стартовый символ
 #define divider ' '       // разделительный символ
@@ -13,16 +13,21 @@ boolean gameFlag;
 boolean effectsFlag;
 byte game;
 byte effect;
-byte intData[PARSE_AMOUNT];     // массив численных значений после парсинга
+byte intData[PARSE_AMOUNT];                     // массив численных значений после парсинга
 uint32_t prevColor;
 boolean recievedFlag;
 byte lastMode = 0;
 boolean parseStarted;
 
-void bluetoothRoutine() {
-  parsing();                           // принимаем данные
+#if (WIFI_MODE == 1)
+char incomeBuffer[UDP_TX_PACKET_MAX_SIZE];      // Буфер для приема строки команды из wifi udp сокета
+char replyBuffer[] = "ack\r\n";                 // ответ WiFi-клиенту - подтвердждения получения команды
+#endif
 
-  if (!parseStarted && BTcontrol) {                // на время принятия данных матрицу не обновляем!
+void bluetoothRoutine() {
+  parsing();                                    // принимаем данные
+
+  if (!parseStarted && BTcontrol) {             // на время принятия данных матрицу не обновляем!
 
     if (runningFlag) fillString(runningText, globalColor);   // бегущая строка
     if (gameFlag) games();                      // игры
@@ -111,6 +116,12 @@ byte parse_index;
 String string_convert = "";
 enum modes {NORMAL, COLOR, TEXT} parseMode;
 
+bool fromWiFi = false;
+bool fromBT = false;
+bool haveIncomeData = false;
+char incomingByte;
+int  bufIdx = 0;
+int  packetSize = 0;
 
 // ********************* ПРИНИМАЕМ ДАННЫЕ **********************
 void parsing() {
@@ -248,49 +259,132 @@ void parsing() {
   }
 
   // ****************** ПАРСИНГ *****************
-  if (Serial.available() > 0) {
-    char incomingByte;
-    if (parseMode == TEXT) {     // если нужно принять строку
-      runningText = Serial.readString();  // принимаем всю
-      incomingByte = ending;              // сразу завершаем парс
-      parseMode = NORMAL;
-    } else {
-      incomingByte = Serial.read();        // обязательно ЧИТАЕМ входящий символ
+  fromWiFi = false;
+  fromBT = false;
+  haveIncomeData = false;
+
+#if (WIFI_MODE == 1)
+    if (!haveIncomeData) {
+
+      // Если предыдущий буфер еще не разобран - новых данных из сокета не читаем, продолжаем разбор уже считанного буфера
+      haveIncomeData = bufIdx > 0 && bufIdx < packetSize; 
+      if (!haveIncomeData) {
+        packetSize = udp.parsePacket();      
+        haveIncomeData = packetSize > 0;      
+      
+        if (haveIncomeData) {                
+          // read the packet into packetBufffer
+          int len = udp.read(incomeBuffer, UDP_TX_PACKET_MAX_SIZE);
+          if (len > 0) fromWiFi = true;
+          bufIdx = 0;
+
+          // Если управление через BT включено - Serial для коммуникации через BT,
+          // если выключено - используем для вывода диагностики в монитор порта  
+#if (BT_MODE == 0)
+          Serial.print("UDP пакeт размером ");
+          Serial.print(packetSize);
+          Serial.print(" от ");
+          IPAddress remote = udp.remoteIP();
+          for (int i = 0; i < 4; i++) {
+            Serial.print(remote[i], DEC);
+            if (i < 3) {
+              Serial.print(".");
+            }
+          }
+          Serial.print(", port ");
+          Serial.println(udp.remotePort());
+          Serial.print("Содержимое: ");
+          Serial.println(incomeBuffer);
+        }
+#endif
+        if (parseMode == TEXT) {                         // если нужно принять строку          
+            runningText = String(&incomeBuffer[bufIdx]); // принимаем всю
+                      
+            incomingByte = ending;                       // сразу завершаем парс
+            parseMode = NORMAL;
+            bufIdx = 0; 
+            packetSize = 0;                              // все байты из входящего пакета обработаны
+        } else {
+            incomingByte = incomeBuffer[bufIdx++];       // обязательно ЧИТАЕМ входящий символ
+        }        
+        delay(0);            // ESP8266 при вызове delay отпрабатывает стек IP протокола, дадим ему поработать        
+      } else {
+        incomingByte = incomeBuffer[bufIdx++];           // следующий входящий символ из буфера
+      }
     }
-    if (parseStarted) {                         // если приняли начальный символ (парсинг разрешён)
-      if (incomingByte != divider && incomingByte != ending) {   // если это не пробел И не конец
-        string_convert += incomingByte;       // складываем в строку
-      } else {                                // если это пробел или ; конец пакета
+#endif
+
+#if (BT_MODE == 1)
+    // Если есть не разобранный буфер от WiFi сокета - данные BT пока не разбираем
+    if (!haveIncomeData) {
+      haveIncomeData = Serial.available() > 0;
+      if (haveIncomeData) {
+        true;
+        fromBT = true;
+        if (parseMode == TEXT) {              // если нужно принять строку
+          runningText = Serial.readString();  // принимаем всю
+          incomingByte = ending;              // сразу завершаем парс
+          parseMode = NORMAL;
+        } else {
+          incomingByte = Serial.read();        // обязательно ЧИТАЕМ входящий символ
+        }
+      }
+    }
+#endif
+  
+  if (haveIncomeData) {
+
+    if (parseStarted) {                                             // если приняли начальный символ (парсинг разрешён)
+      if (incomingByte != divider && incomingByte != ending) {      // если это не пробел И не конец
+        string_convert += incomingByte;                             // складываем в строку
+      } else {                                                      // если это пробел или ; конец пакета
         if (parse_index == 0) {
           byte thisMode = string_convert.toInt();
           if (thisMode == 0 || thisMode == 5) parseMode = COLOR;    // передача цвета (в отдельную переменную)
           else if (thisMode == 6) parseMode = TEXT;
           else parseMode = NORMAL;
-          //if (thisMode != 7 || thisMode != 0) runningFlag = false;
+        //if (thisMode != 7 || thisMode != 0) runningFlag = false;
         }
 
         if (parse_index == 1) {       // для второго (с нуля) символа в посылке
           if (parseMode == NORMAL) intData[parse_index] = string_convert.toInt();             // преобразуем строку в int и кладём в массив}
-          //if (parseMode == COLOR) globalColor = strtol(&string_convert[0], NULL, 16);     // преобразуем строку HEX в цифру
-          if (parseMode == COLOR) globalColor = (uint32_t)HEXtoInt(string_convert);     // преобразуем строку HEX в цифру
+        //if (parseMode == COLOR) globalColor = strtol(&string_convert[0], NULL, 16);         // преобразуем строку HEX в цифру
+          if (parseMode == COLOR) globalColor = (uint32_t)HEXtoInt(string_convert);           // преобразуем строку HEX в цифру
         } else {
           intData[parse_index] = string_convert.toInt();  // преобразуем строку в int и кладём в массив
         }
-        string_convert = "";                  // очищаем строку
+        string_convert = "";                        // очищаем строку
         parse_index++;                              // переходим к парсингу следующего элемента массива
       }
     }
-    if (incomingByte == header) {             // если это $
-      parseStarted = true;                      // поднимаем флаг, что можно парсить
+
+    if (incomingByte == header) {                   // если это $
+      parseStarted = true;                          // поднимаем флаг, что можно парсить
       parse_index = 0;                              // сбрасываем индекс
-      string_convert = "";                    // очищаем строку
+      string_convert = "";                          // очищаем строку
     }
-    if (incomingByte == ending) {             // если таки приняли ; - конец парсинга
+
+    if (incomingByte == ending) {                   // если таки приняли ; - конец парсинга
       parseMode == NORMAL;
-      parseStarted = false;                     // сброс
-      recievedFlag = true;                    // флаг на принятие
+      parseStarted = false;                         // сброс
+      recievedFlag = true;                          // флаг на принятие
+    }
+
+    if (bufIdx >= packetSize) {                     // Весь буфер разобран 
+      bufIdx = 0;
+      packetSize = 0;
     }
   }
+  
+#if (WIFI_MODE == 1)
+  // Если данные былиполучены по WiFi - отправить подтверждение, чтобы клиентский сокет прервал ожидание
+  if (fromWiFi) {
+    udp.beginPacket(udp.remoteIP(), udp.remotePort());
+    udp.write(replyBuffer);
+    udp.endPacket();
+  }
+#endif
+
 }
 
 // hex string to uint32_t

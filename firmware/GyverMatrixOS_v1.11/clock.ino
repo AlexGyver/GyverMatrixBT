@@ -150,6 +150,10 @@ void clockColor() {
 
 // нарисовать часы
 void drawClock(byte hrs, byte mins, boolean dots, byte X, byte Y) {
+  if  (MCU_TYPE == 1) {
+    hrs = hour();
+    mins = minute();
+  }
 #if (CLOCK_ORIENT == 0)
   if (hrs > 9) drawDigit3x5(hrs / 10, X, Y, clockLED[0]);
   drawDigit3x5(hrs % 10, X + 4, Y, clockLED[1]);

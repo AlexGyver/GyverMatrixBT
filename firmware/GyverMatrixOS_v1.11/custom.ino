@@ -50,8 +50,8 @@
 
   Рисунки и анимации:
     loadImage(<название массива>);    // основная функция вывода картинки
-    imageRoutine1();                  // пример использования
-    animation1();                     // пример анимации
+    imageRoutine();                   // пример использования
+    animation();                      // пример анимации
 
 */
 
@@ -62,7 +62,13 @@
 //  break;
 
 // не забудьте указать количество режимов для корректного переключения с последнего на первый
-#define MODES_AMOUNT 28   // количество кастомных режимов (которые переключаются сами или кнопкой)
+
+// количество кастомных режимов (которые переключаются сами или кнопкой)
+#if (USE_ANIMATION == 1 && WIDTH == 16 && HEIGHT == 16)
+#define MODES_AMOUNT 29   
+#else
+#define MODES_AMOUNT 28
+#endif
 
 void customModes() {
   switch (thisMode) {
@@ -123,8 +129,14 @@ void customModes() {
       break;
     case 27: clockRoutine();
       break;
+#if (USE_ANIMATION == 1 && WIDTH == 16 && HEIGHT == 16)
+    case 28: animation();
+      break;
+#endif      
   }
 }
+
+#if (USE_ANIMATION == 1 && WIDTH == 16 && HEIGHT == 16)
 
 // функция загрузки картинки в матрицу. должна быть здесь, иначе не работает =)
 void loadImage(uint16_t (*frame)[WIDTH]) {
@@ -143,23 +155,23 @@ timerMinim gifTimer(D_GIF_SPEED);
 // Внимание! Если размер матрицы не совпадает с исходным размером матрицы в скетче
 // (если вы только что  его скачали), то нужно удалить/закомментировать данные функции!
 //
-/*
-  // показать картинку
-  void imageRoutine1() {
+
+// показать картинку
+void imageRoutine1() {
   if (loadingFlag) {
     loadingFlag = false;
-    loadImage(frame00);
+    loadImage((const uint16_t*)frame00);
   }
-  }
+}
 
-  void animation1() {
+void animation() {
   if (gifTimer.isReady()) {
     frameNum++;
     if (frameNum >= sizeof(framesArray)) frameNum = 0;
-    loadImage(framesArray[frameNum]);
+    loadImage((const uint16_t*)(framesArray[frameNum]));
   }
-  }
-*/
+}
+#endif
 
 // ********************* ОСНОВНОЙ ЦИКЛ РЕЖИМОВ *******************
 #if (SMOOTH_CHANGE == 1)

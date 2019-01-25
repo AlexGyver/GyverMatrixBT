@@ -333,6 +333,11 @@ void parsing() {
           Serial.println(incomeBuffer);
         }
 #endif
+        // NTP packet from time server
+        if (udp.remotePort() == 123) {
+          parseNTP();
+          haveIncomeData = 0;
+        }
       }
 
       if (haveIncomeData) {         

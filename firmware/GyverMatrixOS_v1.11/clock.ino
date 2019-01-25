@@ -88,19 +88,14 @@ unsigned long sendNTPpacket(IPAddress& address)
 }
 
 void parseNTP() {
-  if (millis() - ntp_t > 3000) {
-    ntp_t = 0;
-    return;
-  }
-  int cb = udp.parsePacket();
-  if (!cb) {
-    return;
-  } else {
+#if (WIFI_MODE == 1)
+    Serial.println("Parsing NTP data");
+#endif
     ntp_t = 0;
     init_time = 1;
-    udp.read(packetBuffer, NTP_PACKET_SIZE); // read the packet into the buffer
-    unsigned long highWord = word(packetBuffer[40], packetBuffer[41]);
-    unsigned long lowWord = word(packetBuffer[42], packetBuffer[43]);
+    //udp.read(packetBuffer, NTP_PACKET_SIZE); // read the packet into the buffer
+    unsigned long highWord = word(incomeBuffer[40], incomeBuffer[41]);
+    unsigned long lowWord = word(incomeBuffer[42], incomeBuffer[43]);
     // combine the four bytes (two words) into a long integer
     // this is NTP time (seconds since Jan 1 1900):
     unsigned long secsSince1900 = highWord << 16 | lowWord;
@@ -109,12 +104,15 @@ void parseNTP() {
     //DateTime now = secsSince1900 - seventyYears + (timeZoneOffset + daylight) * 3600;
     
     time_t t = secsSince1900 - seventyYears + (timeZoneOffset) * 3600;
+#if (WIFI_MODE == 1)
+    Serial.print("Seconds since 1970: ");
+    Serial.println(t);
+#endif
     setTime(t);
-  }
 }
 
 void getNTP() {
-  if (!connected) {
+  if (!wifi_connected) {
     return;
   }
   WiFi.hostByName(ntpServerName, timeServerIP);

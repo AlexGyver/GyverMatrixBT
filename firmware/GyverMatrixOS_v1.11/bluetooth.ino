@@ -21,14 +21,13 @@ boolean parseStarted;
 
 #if (WIFI_MODE == 1)
 char incomeBuffer[UDP_TX_PACKET_MAX_SIZE];      // Буфер для приема строки команды из wifi udp сокета
-char replyBuffer[] = "ack\r\n";                 // ответ WiFi-клиенту - подтвердждения получения команды
+char replyBuffer[] = "ack\r\n";                 // ответ WiFi-клиенту - подтверждения получения команды
 #endif
 
 void bluetoothRoutine() {
   parsing();                                    // принимаем данные
 
   if (!parseStarted && BTcontrol) {             // на время принятия данных матрицу не обновляем!
-
     if (runningFlag) fillString(runningText, globalColor);   // бегущая строка
     if (gameFlag) games();                      // игры
     if (effectsFlag) effects();                 // эффекты
@@ -37,6 +36,11 @@ void bluetoothRoutine() {
 
 // блок эффектов, работают по общему таймеру
 void effects() {
+  
+  // Только эффекты 0 и 1 совместимы с бегущей строкой - они меняют цвет букв
+  // Остальные эффекты портят бегущую строку - ее нужно отключать  
+  if (runningFlag && effect > 1) runningFlag = false;
+    
   if (effectTimer.isReady()) {
     switch (effect) {
       case 0: brightnessRoutine();
@@ -57,7 +61,7 @@ void effects() {
         break;
       case 8: ballsRoutine();
         break;
-      case 9: //wavesRoutine();  // убран из этой версии, т.к. хлам
+      case 9: clockRoutine();
         break;
       case 10: starfallRoutine();
         break;
@@ -90,6 +94,11 @@ void effects() {
 
 // блок игр
 void games() {
+
+  // Lkz игр отключаем бегущую строку и эффекты
+  if (effectsFlag) effectsFlag = false;
+  if (runningFlag) runningFlag = false;
+  
   switch (game) {
     case 0:
       snakeRoutine();
@@ -145,7 +154,9 @@ void parsing() {
     12 - кнопка вниз
     13 - кнопка влево
     14 - пауза в игре
-    15 - скорость $8 скорость;
+    15 - скорость $15 скорость;
+    16 - Режим смены эффектов: $16 value; N:  0 - Autoplay on; 1 - Autoplay off; 2 - PrevMode; 3 - NextMode
+    17 - Время фвтосмены эффектов: $17 сек;
   */
   if (recievedFlag) {      // если получены данные
     recievedFlag = false;
@@ -163,14 +174,22 @@ void parsing() {
 
     switch (intData[0]) {
       case 1:
+        if (runningFlag) runningFlag = false;
+        if (gameFlag && game > 0) gameFlag = false;  
+        if (effectsFlag && effect > 1) effectsFlag = false;
         drawPixelXY(intData[1], intData[2], gammaCorrection(globalColor));
         FastLED.show();
         break;
       case 2:
+        if (gameFlag) gameFlag = false;  
+        if (effectsFlag && effect > 1) effectsFlag = false;
         fillAll(gammaCorrection(globalColor));
         FastLED.show();
         break;
       case 3:
+        if (runningFlag) runningFlag = false;
+        if (gameFlag) gameFlag = false;  
+        if (effectsFlag && effect > 1) effectsFlag = false;
         FastLED.clear();
         FastLED.show();
         break;
@@ -181,6 +200,9 @@ void parsing() {
         FastLED.show();
         break;
       case 5:
+        if (runningFlag) runningFlag = false;
+        if (gameFlag) gameFlag = false;  
+        if (effectsFlag && effect > 1) effectsFlag = false;
         drawPixelXY(intData[2], intData[3], gammaCorrection(globalColor));
         // делаем обновление матрицы каждую строчку, чтобы реже обновляться
         // и не пропускать пакеты данных (потому что отправка на большую матрицу занимает много времени)
@@ -196,10 +218,15 @@ void parsing() {
       case 7:
         if (intData[1] == 1) runningFlag = true;
         if (intData[1] == 0) runningFlag = false;
+        if (runningFlag) {
+          gameFlag = false;
+          effectsFlag =false;
+        }
         break;
       case 8:
         if (intData[1] == 0) {
           effect = intData[2];
+          if (effect>1) runningFlag = true;
           gameFlag = false;
           loadingFlag = true;
           breathBrightness = globalBrightness;
@@ -207,12 +234,16 @@ void parsing() {
           globalSpeed = intData[3];
           gameTimer.setInterval(globalSpeed * 4);
         }
-        else if (intData[1] == 1) effectsFlag = !effectsFlag;
+        else if (intData[1] == 1) {
+          effectsFlag = !effectsFlag;
+          if (effectsFlag) gameFlag = false;
+          if (effectsFlag && effect > 1) runningFlag = false;
+        }        
         break;
       case 9:
-        if (lastMode != 1) loadingFlag = true;    // начать новую игру при переходе со всех режимов кроме рисования
+        if (lastMode != 1) loadingFlag = true;    
         effectsFlag = false;
-        //gameFlag = true;
+        runningFlag = false;        
         game = intData[1];
         globalSpeed = intData[2];
         gameSpeed = globalSpeed * 4;
@@ -314,7 +345,7 @@ void parsing() {
             incomeBuffer[packetSize] = 0;
   
             // Оставшийся буфер преобразуем с строку
-            runningText = String(&incomeBuffer[bufIdx]); // 
+            runningText = String(&incomeBuffer[bufIdx+1]); // 
                       
             incomingByte = ending;                       // сразу завершаем парс
             parseMode = NORMAL;
@@ -381,6 +412,7 @@ void parsing() {
       parseMode == NORMAL;
       parseStarted = false;                         // сброс
       recievedFlag = true;                          // флаг на принятие
+      loadingFlag = false;                          // 
     }
 
     if (bufIdx >= packetSize) {                     // Весь буфер разобран 

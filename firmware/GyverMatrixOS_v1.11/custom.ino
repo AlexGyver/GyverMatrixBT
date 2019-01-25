@@ -6,8 +6,9 @@
 #define SHOW_TEXT_ONCE 1    // показывать бегущий текст только 1 раз
 
 // подключаем внешние файлы с картинками
-//#include "bitmap2.h"
-
+#if (USE_ANIMATION == 1 && WIDTH == 16 && HEIGHT == 16)
+#include "bitmap2.h"
+#endif
 
 /*
    Режимы:
@@ -130,48 +131,11 @@ void customModes() {
     case 27: clockRoutine();
       break;
 #if (USE_ANIMATION == 1 && WIDTH == 16 && HEIGHT == 16)
-    case 28: animation();
+    case 28: ;//animation();
       break;
 #endif      
   }
 }
-
-#if (USE_ANIMATION == 1 && WIDTH == 16 && HEIGHT == 16)
-
-// функция загрузки картинки в матрицу. должна быть здесь, иначе не работает =)
-void loadImage(uint16_t (*frame)[WIDTH]) {
-  for (byte i = 0; i < WIDTH; i++)
-    for (byte j = 0; j < HEIGHT; j++)
-      drawPixelXY(i, j, gammaCorrection(expandColor((pgm_read_word(&(frame[HEIGHT - j - 1][i]))))));
-  // да, тут происходит лютенький п@здец, а именно:
-  // 1) pgm_read_word - восстанавливаем из PROGMEM (флэш памяти) цвет пикселя в 16 битном формате по его координатам
-  // 2) expandColor - расширяем цвет до 24 бит (спасибо adafruit)
-  // 3) gammaCorrection - проводим коррекцию цвета для более корректного отображения
-}
-timerMinim gifTimer(D_GIF_SPEED);
-
-// ********************** ПРИМЕРЫ ВЫВОДА КАРТИНОК ***********************
-
-// Внимание! Если размер матрицы не совпадает с исходным размером матрицы в скетче
-// (если вы только что  его скачали), то нужно удалить/закомментировать данные функции!
-//
-
-// показать картинку
-void imageRoutine1() {
-  if (loadingFlag) {
-    loadingFlag = false;
-    loadImage((const uint16_t*)frame00);
-  }
-}
-
-void animation() {
-  if (gifTimer.isReady()) {
-    frameNum++;
-    if (frameNum >= sizeof(framesArray)) frameNum = 0;
-    loadImage((const uint16_t*)(framesArray[frameNum]));
-  }
-}
-#endif
 
 // ********************* ОСНОВНОЙ ЦИКЛ РЕЖИМОВ *******************
 #if (SMOOTH_CHANGE == 1)
@@ -187,6 +151,7 @@ static void nextMode() {
   nextModeHandler();
 #endif
 }
+
 static void prevMode() {
 #if (SMOOTH_CHANGE == 1)
   fadeMode = 0;
@@ -195,6 +160,7 @@ static void prevMode() {
   prevModeHandler();
 #endif
 }
+
 void nextModeHandler() {
   thisMode++;
   if (thisMode >= MODES_AMOUNT) thisMode = 0;
@@ -203,6 +169,7 @@ void nextModeHandler() {
   FastLED.clear();
   FastLED.show();
 }
+
 void prevModeHandler() {
   thisMode--;
   if (thisMode < 0) thisMode = MODES_AMOUNT - 1;
@@ -213,6 +180,7 @@ void prevModeHandler() {
 }
 
 int fadeBrightness;
+
 #if (SMOOTH_CHANGE == 1)
 void modeFader() {
   if (fadeMode == 0) {

@@ -64,7 +64,7 @@ int AUTOPLAY_PERIOD = 30;     // время между авто сменой р�
 #define USE_FONTS 1           // использовать буквы (бегущая строка) (0 нет, 1 да)
 #define USE_CLOCK 1           // использовать часы (0 нет, 1 да)
 #define USE_RTC 0             // использовать часы реального времени DS3231 (0 нет, 1 да)
-#define USE_ANIMATION 0       // использовать эффект анимации (0 нет, 1 да)
+#define USE_ANIMATION 1       // использовать эффект анимации (0 нет, 1 да)
 
 // игры
 #define USE_SNAKE 1           // игра змейка (0 нет, 1 да)
@@ -154,7 +154,7 @@ byte frameNum;
 int gameSpeed = DEMO_GAME_SPEED;
 boolean gameDemo = true;
 boolean idleState = true;  // флаг холостого режима работы
-boolean BTcontrol = false;  // флаг контроля с блютус. Если false - управление с кнопок
+boolean BTcontrol = false;  // флаг контроля с блютус или WiFi. Если false - управление с кнопок
 int8_t thisMode = 0;
 boolean controlFlag = false;
 boolean gamemodeFlag = false;
@@ -223,13 +223,6 @@ RTC_DS3231 rtc;
   timerMinim NTPCheck(1000 * 60 * SYNC_TIME_PERIOD); // Сверяем время через SYNC_TIME_PERIOD минут
 #endif
 
-#define WIDTH 16              // ширина матрицы
-#define HEIGHT 16             // высота матрицы
-
-#if (USE_ANIMATION == 1 && WIDTH == 16 && HEIGHT == 16)
-#include "bitmap2.h"
-#endif
-
 void setup() {
 #if (BT_MODE == 1)
   Serial.begin(9600);
@@ -258,7 +251,7 @@ void setup() {
 
   // настройки ленты
   FastLED.addLeds<WS2812, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
-  FastLED.setBrightness(BRIGHTNESS);
+  FastLED.setBrightness(globalBrightness);
   if (CURRENT_LIMIT > 0) FastLED.setMaxPowerInVoltsAndMilliamps(5, CURRENT_LIMIT);
   FastLED.clear();
   FastLED.show();

@@ -63,7 +63,9 @@ CRGB clockLED[5] = {CRGB::White, CRGB::White, CRGB::Red, CRGB::White, CRGB::Whit
 // send an NTP request to the time server at the given address
 unsigned long sendNTPpacket(IPAddress& address)
 {
-  //Serial.println("sending NTP packet...");
+#if (BT_MODE == 0)  
+  Serial.println("sending NTP packet...");
+#endif  
   // set all bytes in the buffer to 0
   memset(packetBuffer, 0, NTP_PACKET_SIZE);
   // Initialize values needed to form NTP request

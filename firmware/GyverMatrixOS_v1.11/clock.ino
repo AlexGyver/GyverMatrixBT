@@ -5,14 +5,14 @@
 #define CLOCK_ORIENT 0      // 0 горизонтальные, 1 вертикальные
 #define CLOCK_X 0           // позиция часов по X (начало координат - левый нижний угол)
 #define CLOCK_Y 6           // позиция часов по Y (начало координат - левый нижний угол)
-#define COLOR_MODE 2        // Режим цвета часов
+#define COLOR_MODE 0        // Режим цвета часов
 //                          0 - заданные ниже цвета
 //                          1 - радужная смена (каждая цифра)
 //                          2 - радужная смена (часы, точки, минуты)
 
 #define MIN_COLOR CRGB::White     // цвет минут
 #define HOUR_COLOR CRGB::White    // цвет часов
-#define DOT_COLOR CRGB::Red       // цвет точек
+#define DOT_COLOR CRGB::White     // цвет точек
 
 #define HUE_STEP 5          // шаг цвета часов в режиме радужной смены
 #define HUE_GAP 30          // шаг цвета между цифрами в режиме радужной смены
@@ -57,7 +57,7 @@ CRGB overlayLEDs[70];
 #endif
 
 #if (USE_CLOCK == 1)
-CRGB clockLED[5] = {CRGB::White, CRGB::White, CRGB::Red, CRGB::White, CRGB::White};
+CRGB clockLED[5] = {HOUR_COLOR, HOUR_COLOR, DOT_COLOR, MIN_COLOR, MIN_COLOR};
 
 #if (MCU_TYPE == 1)
 // send an NTP request to the time server at the given address
@@ -88,7 +88,7 @@ unsigned long sendNTPpacket(IPAddress& address)
 }
 
 void parseNTP() {
-#if (WIFI_MODE == 1)
+#if (BT_MODE == 0)  
     Serial.println("Parsing NTP data");
 #endif
     ntp_t = 0;
@@ -104,7 +104,7 @@ void parseNTP() {
     //DateTime now = secsSince1900 - seventyYears + (timeZoneOffset + daylight) * 3600;
     
     time_t t = secsSince1900 - seventyYears + (timeZoneOffset) * 3600;
-#if (WIFI_MODE == 1)
+#if (BT_MODE == 0)  
     Serial.print("Seconds since 1970: ");
     Serial.println(t);
 #endif

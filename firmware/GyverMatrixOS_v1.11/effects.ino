@@ -38,12 +38,14 @@ boolean brightnessDirection;
 void brightnessRoutine() {
   if (brightnessDirection) {
     breathBrightness += 2;
-    if (breathBrightness > globalBrightness - 1) {
+    if (breathBrightness > globalBrightness - 2) {
+      breathBrightness = globalBrightness;
       brightnessDirection = false;
     }
   } else {
     breathBrightness -= 2;
-    if (breathBrightness < 1) {
+    if (breathBrightness < 2) {
+      breathBrightness = 2;
       brightnessDirection = true;
     }
   }

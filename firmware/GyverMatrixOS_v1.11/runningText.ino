@@ -24,8 +24,8 @@ void fillString(String text, uint32_t color) {
     fullTextFlag = false;
   }
   
-  if (scrollTimer.isReady() || (!BTcontrol && !gamemodeFlag)) {
-  //if (scrollTimer.isReady()) {
+  //if (scrollTimer.isReady() || (!BTcontrol && !gamemodeFlag)) {
+  if (scrollTimer.isReady()) {
     FastLED.clear();
     byte i = 0, j = 0;
     while (text[i] != '\0') {

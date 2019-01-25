@@ -27,8 +27,11 @@ char replyBuffer[] = "ack\r\n";                 // ответ WiFi-клиент�
 void bluetoothRoutine() {
   parsing();                                    // принимаем данные
 
-  if (!parseStarted && BTcontrol) {             // на время принятия данных матрицу не обновляем!
-    if (runningFlag) fillString(runningText, globalColor);   // бегущая строка
+  if (!parseStarted && BTcontrol) {                          // на время принятия данных матрицу не обновляем!
+    if (runningFlag) fillString(runningText, globalColor);   // бегущая строка - Running Text
+    if (!(runningFlag || gameFlag) && thisMode < 3)  {       // бегущая строка bp customModes - продолжать выполнять, т.к. в основном цикле оно отключено по BTcontrol
+      customModes();  
+    }
     if (gameFlag) games();                      // игры
     if (effectsFlag) effects();                 // эффекты
   }
@@ -95,7 +98,7 @@ void effects() {
 // блок игр
 void games() {
 
-  // Lkz игр отключаем бегущую строку и эффекты
+  // Для игр отключаем бегущую строку и эффекты
   if (effectsFlag) effectsFlag = false;
   if (runningFlag) runningFlag = false;
   
@@ -156,7 +159,7 @@ void parsing() {
     14 - пауза в игре
     15 - скорость $15 скорость;
     16 - Режим смены эффектов: $16 value; N:  0 - Autoplay on; 1 - Autoplay off; 2 - PrevMode; 3 - NextMode
-    17 - Время фвтосмены эффектов: $17 сек;
+    17 - Время автосмены эффектов: $17 сек;
   */
   if (recievedFlag) {      // если получены данные
     recievedFlag = false;
@@ -174,22 +177,14 @@ void parsing() {
 
     switch (intData[0]) {
       case 1:
-        if (runningFlag) runningFlag = false;
-        if (gameFlag && game > 0) gameFlag = false;  
-        if (effectsFlag && effect > 1) effectsFlag = false;
         drawPixelXY(intData[1], intData[2], gammaCorrection(globalColor));
         FastLED.show();
         break;
       case 2:
-        if (gameFlag) gameFlag = false;  
-        if (effectsFlag && effect > 1) effectsFlag = false;
         fillAll(gammaCorrection(globalColor));
         FastLED.show();
         break;
       case 3:
-        if (runningFlag) runningFlag = false;
-        if (gameFlag) gameFlag = false;  
-        if (effectsFlag && effect > 1) effectsFlag = false;
         FastLED.clear();
         FastLED.show();
         break;
@@ -200,9 +195,6 @@ void parsing() {
         FastLED.show();
         break;
       case 5:
-        if (runningFlag) runningFlag = false;
-        if (gameFlag) gameFlag = false;  
-        if (effectsFlag && effect > 1) effectsFlag = false;
         drawPixelXY(intData[2], intData[3], gammaCorrection(globalColor));
         // делаем обновление матрицы каждую строчку, чтобы реже обновляться
         // и не пропускать пакеты данных (потому что отправка на большую матрицу занимает много времени)
@@ -218,15 +210,10 @@ void parsing() {
       case 7:
         if (intData[1] == 1) runningFlag = true;
         if (intData[1] == 0) runningFlag = false;
-        if (runningFlag) {
-          gameFlag = false;
-          effectsFlag =false;
-        }
         break;
       case 8:
         if (intData[1] == 0) {
           effect = intData[2];
-          if (effect>1) runningFlag = true;
           gameFlag = false;
           loadingFlag = true;
           breathBrightness = globalBrightness;
@@ -234,16 +221,12 @@ void parsing() {
           globalSpeed = intData[3];
           gameTimer.setInterval(globalSpeed * 4);
         }
-        else if (intData[1] == 1) {
-          effectsFlag = !effectsFlag;
-          if (effectsFlag) gameFlag = false;
-          if (effectsFlag && effect > 1) runningFlag = false;
-        }        
+        else if (intData[1] == 1) effectsFlag = !effectsFlag;
         break;
       case 9:
-        if (lastMode != 1) loadingFlag = true;    
+        if (lastMode != 1) loadingFlag = true;    // начать новую игру при переходе со всех режимов кроме рисования
         effectsFlag = false;
-        runningFlag = false;        
+        //gameFlag = true;
         game = intData[1];
         globalSpeed = intData[2];
         gameSpeed = globalSpeed * 4;
@@ -295,91 +278,93 @@ void parsing() {
   haveIncomeData = false;
 
 #if (WIFI_MODE == 1)
+  if (!haveIncomeData) {
+
+    // Если предыдущий буфер еще не разобран - новых данных из сокета не читаем, продолжаем разбор уже считанного буфера
+    haveIncomeData = bufIdx > 0 && bufIdx < packetSize; 
     if (!haveIncomeData) {
+      packetSize = udp.parsePacket();      
+      haveIncomeData = packetSize > 0;      
+    
+      if (haveIncomeData) {                
+        // read the packet into packetBufffer
+        int len = udp.read(incomeBuffer, UDP_TX_PACKET_MAX_SIZE);
+        if (len > 0) {
+          fromWiFi = true;
+          incomeBuffer[len] =0;
+        }
+        bufIdx = 0;
+        
+        delay(0);            // ESP8266 при вызове delay отпрабатывает стек IP протокола, дадим ему поработать        
 
-      // Если предыдущий буфер еще не разобран - новых данных из сокета не читаем, продолжаем разбор уже считанного буфера
-      haveIncomeData = bufIdx > 0 && bufIdx < packetSize; 
-      if (!haveIncomeData) {
-        packetSize = udp.parsePacket();      
-        haveIncomeData = packetSize > 0;      
-      
-        if (haveIncomeData) {                
-          // read the packet into packetBufffer
-          int len = udp.read(incomeBuffer, UDP_TX_PACKET_MAX_SIZE);
-          if (len > 0) {
-            fromWiFi = true;
-            incomeBuffer[len] =0;
-          }
-          bufIdx = 0;
-          
-          delay(0);            // ESP8266 при вызове delay отпрабатывает стек IP протокола, дадим ему поработать        
-
-          // Если управление через BT включено - Serial для коммуникации через BT,
-          // если выключено - используем для вывода диагностики в монитор порта  
+        // Если управление через BT включено - Serial для коммуникации через BT,
+        // если выключено - используем для вывода диагностики в монитор порта  
 #if (BT_MODE == 0)
-          Serial.print("UDP пакeт размером ");
-          Serial.print(packetSize);
-          Serial.print(" от ");
-          IPAddress remote = udp.remoteIP();
-          for (int i = 0; i < 4; i++) {
-            Serial.print(remote[i], DEC);
-            if (i < 3) {
-              Serial.print(".");
-            }
+        Serial.print("UDP пакeт размером ");
+        Serial.print(packetSize);
+        Serial.print(" от ");
+        IPAddress remote = udp.remoteIP();
+        for (int i = 0; i < 4; i++) {
+          Serial.print(remote[i], DEC);
+          if (i < 3) {
+            Serial.print(".");
           }
-          Serial.print(", port ");
-          Serial.println(udp.remotePort());
+        }
+        Serial.print(", port ");
+        Serial.println(udp.remotePort());
+        if (udp.remotePort() == localPort) {
           Serial.print("Содержимое: ");
           Serial.println(incomeBuffer);
         }
-#endif
-        // NTP packet from time server
-        if (udp.remotePort() == 123) {
-          parseNTP();
-          haveIncomeData = 0;
-        }
       }
-
-      if (haveIncomeData) {         
-        if (parseMode == TEXT) {                         // если нужно принять строку - принимаем всю
-            // Из за ошибки в компоненте UdpSender в Thunkable - теряются половина отправленных 
-            // символов, если их кодировка - двухбайтовый UTF8, т.к. оно вычисляет длину строки без учета двухбайтовости
-            // Чтобы символы не терялись - при отправке строки из андроид-программы, она добивается с конца пробелами
-            // Здесь эти конечные пробелы нужно предварительно удалить
-            while (packetSize > 0 && incomeBuffer[packetSize-1] == ' ') packetSize--;
-            incomeBuffer[packetSize] = 0;
-  
-            // Оставшийся буфер преобразуем с строку
-            runningText = String(&incomeBuffer[bufIdx+1]); // 
-                      
-            incomingByte = ending;                       // сразу завершаем парс
-            parseMode = NORMAL;
-            bufIdx = 0; 
-            packetSize = 0;                              // все байты из входящего пакета обработаны
-          } else {
-            incomingByte = incomeBuffer[bufIdx++];       // обязательно ЧИТАЕМ входящий символ
-        } 
-      }       
-    }
 #endif
+      // NTP packet from time server
+      if (udp.remotePort() == 123) {
+        parseNTP();
+        haveIncomeData = 0;
+      }
+    }
 
-#if (BT_MODE == 1)
-    // Если есть не разобранный буфер от WiFi сокета - данные BT пока не разбираем
-    if (!haveIncomeData) {
-      haveIncomeData = Serial.available() > 0;
-      if (haveIncomeData) {
-        true;
-        fromBT = true;
-        if (parseMode == TEXT) {              // если нужно принять строку
-          runningText = Serial.readString();  // принимаем всю
-          incomingByte = ending;              // сразу завершаем парс
+    if (haveIncomeData) {         
+      if (parseMode == TEXT) {                         // если нужно принять строку - принимаем всю
+          // Из за ошибки в компоненте UdpSender в Thunkable - теряются половина отправленных 
+          // символов, если их кодировка - двухбайтовый UTF8, т.к. оно вычисляет длину строки без учета двухбайтовости
+          // Чтобы символы не терялись - при отправке строки из андроид-программы, она добивается с конца пробелами
+          // Здесь эти конечные пробелы нужно предварительно удалить
+          while (packetSize > 0 && incomeBuffer[packetSize-1] == ' ') packetSize--;
+          incomeBuffer[packetSize] = 0;
+
+          // Оставшийся буфер преобразуем с строку
+          runningText = String(&incomeBuffer[bufIdx+1]); // 
+                    
+          incomingByte = ending;                       // сразу завершаем парс
           parseMode = NORMAL;
+          bufIdx = 0; 
+          packetSize = 0;                              // все байты из входящего пакета обработаны
         } else {
-          incomingByte = Serial.read();        // обязательно ЧИТАЕМ входящий символ
-        }
+          incomingByte = incomeBuffer[bufIdx++];       // обязательно ЧИТАЕМ входящий символ
+      } 
+    }       
+  }
+#endif
+
+
+  // Если есть не разобранный буфер от WiFi сокета - данные BT пока не разбираем
+  // Кроме команд от BT, еслион не подключен - можновводить команды в монитор порта
+  if (!haveIncomeData) {
+    haveIncomeData = Serial.available() > 0;
+    if (haveIncomeData) {
+      true;
+      fromBT = true;
+      if (parseMode == TEXT) {              // если нужно принять строку
+        runningText = Serial.readString();  // принимаем всю
+        incomingByte = ending;              // сразу завершаем парс
+        parseMode = NORMAL;
+      } else {
+        incomingByte = Serial.read();        // обязательно ЧИТАЕМ входящий символ
       }
     }
-#endif
+  }
   
   if (haveIncomeData) {
 
@@ -392,13 +377,19 @@ void parsing() {
           if (thisMode == 0 || thisMode == 5) parseMode = COLOR;    // передача цвета (в отдельную переменную)
           else if (thisMode == 6) parseMode = TEXT;
           else parseMode = NORMAL;
-        //if (thisMode != 7 || thisMode != 0) runningFlag = false;
+          // if (thisMode != 7 || thisMode != 0) runningFlag = false;
         }
 
         if (parse_index == 1) {       // для второго (с нуля) символа в посылке
           if (parseMode == NORMAL) intData[parse_index] = string_convert.toInt();             // преобразуем строку в int и кладём в массив}
-        //if (parseMode == COLOR) globalColor = strtol(&string_convert[0], NULL, 16);         // преобразуем строку HEX в цифру
-          if (parseMode == COLOR) globalColor = (uint32_t)HEXtoInt(string_convert);           // преобразуем строку HEX в цифру
+          if (parseMode == COLOR) {                                                           // преобразуем строку HEX в цифру
+            globalColor = (uint32_t)HEXtoInt(string_convert);           
+            if (thisMode == 0) {
+              if (runningFlag && effectsFlag) effectsFlag = false;   
+              incomingByte = ending;
+              parseStarted = false;
+            }
+          }
         } else {
           intData[parse_index] = string_convert.toInt();  // преобразуем строку в int и кладём в массив
         }
@@ -417,7 +408,6 @@ void parsing() {
       parseMode == NORMAL;
       parseStarted = false;                         // сброс
       recievedFlag = true;                          // флаг на принятие
-      loadingFlag = false;                          // 
     }
 
     if (bufIdx >= packetSize) {                     // Весь буфер разобран 
@@ -455,7 +445,7 @@ uint32_t HEXtoInt(String hexValue) {
   return ((uint32_t)number1 << 16 | (uint32_t)number2 << 8 | number3 << 0);
 }
 
-#elif (BT_MODE == 0)
+#else
 void bluetoothRoutine() {
   return;
 }

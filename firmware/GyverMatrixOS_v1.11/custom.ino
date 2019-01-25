@@ -213,6 +213,16 @@ void modeFader() {
 
 boolean loadFlag2;
 void customRoutine() {
+#if (MCU_TYPE == 1 && WIFI_MODE == 1)
+  if (WifiTimer.isReady()) {
+    if (ntp_t > 0 && millis() - ntp_t > 3000) {
+      ntp_t = 0;
+    }
+    if (wifi_connected && (NTPCheck.isReady() || (init_time == 0 && ntp_t == 0))) {
+      getNTP();
+    }
+  }
+#endif    
   if (!BTcontrol) {
     if (!gamemodeFlag) {
       if (effectTimer.isReady()) {

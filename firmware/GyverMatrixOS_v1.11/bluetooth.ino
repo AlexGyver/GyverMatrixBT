@@ -20,11 +20,10 @@ uint32_t prevColor;
 boolean recievedFlag;
 byte lastMode = 0;
 boolean parseStarted;
+String pictureLine;
 
-#if (WIFI_MODE == 1)
 char incomeBuffer[UDP_TX_PACKET_MAX_SIZE];      // Буфер для приема строки команды из wifi udp сокета
 char replyBuffer[] = "ack\r\n";                 // ответ WiFi-клиенту - подтверждения получения команды
-#endif
 
 void bluetoothRoutine() {
   parsing();                                    // принимаем данные
@@ -186,6 +185,13 @@ char incomingByte;
 int  bufIdx = 0;
 int  packetSize = 0;
 
+// разбор строки картинки - команда $5
+char *pch;
+int pntX, pntY, pntColor, pntIdx;
+char buf[14];               // точка картинки FFFFFF XXX YYY
+String pntPart[WIDTH];
+String str;
+
 // ********************* ПРИНИМАЕМ ДАННЫЕ **********************
 void parsing() {
   // ****************** ОБРАБОТКА *****************
@@ -196,7 +202,7 @@ void parsing() {
     2 - заливка - $2;
     3 - очистка - $3;
     4 - яркость - $4 value;
-    5 - картинка $5 colorHEX X Y;
+    5 - картинка построчно $5 colorHEX X Y|colorHEX X Y|...|colorHEX X Y;
     6 - текст $6 some text
     7 - управление текстом: $7 1; пуск, $7 0; стоп
     8 - эффект
@@ -265,21 +271,46 @@ void parsing() {
         runningFlag = false;
         gameFlag = false;
         drawingFlag = true;
-        // начало картинки - очистить матрицу
-        if ((intData[3] == WIDTH - 1) && (intData[2] == 0)) {
-          FastLED.clear(); 
-          prevY = intData[3];
+        loadingFlag = true;
+
+        // строка картинки - в pictureLine в формате color X Y|color X Y|..|color X Y
+        pictureLine.toCharArray(incomeBuffer, pictureLine.length()+1);
+        pch = strtok (incomeBuffer,"|");
+        pntIdx = 0;
+        while (pch != NULL)
+        {
+          pntPart[pntIdx] = String(pch);
+          pntIdx++;
+          pch = strtok (NULL, "|");
         }
-        // делаем обновление матрицы каждую строчку, чтобы реже обновляться
-        // и не пропускать пакеты данных (потому что отправка на большую матрицу занимает много времени)
-        if (prevY != intData[3]) {
-          prevY = intData[3];
-          FastLED.show();
-        }
-        drawPixelXY(intData[2], intData[3], gammaCorrection(globalColor));
-        // Последний пиксель
-        if (intData[3] == 0 && intData[2] == WIDTH - 1) {
-          FastLED.show();
+        
+        for (int i=0; i<WIDTH; i++) {
+          str = pntPart[i];
+          str.toCharArray(buf, str.length()+1);
+
+          pntColor=HEXtoInt(String(strtok(buf," ")));
+          pntX=atoi(strtok(NULL," "));
+          pntY=atoi(strtok(NULL," "));
+
+          // начало картинки - очистить матрицу
+          if ((pntX == 0) && (pntY == WIDTH - 1)) {
+            FastLED.clear(); 
+            prevY = pntY;
+          }
+          
+          // делаем обновление матрицы каждую строчку, чтобы реже обновляться
+          // и не пропускать пакеты данных (потому что отправка на большую матрицу занимает много времени)
+          if (prevY != pntY) {
+            prevY = pntY;
+            FastLED.show();
+          }
+          
+          drawPixelXY(pntX, pntY, gammaCorrection(pntColor));
+          
+          // Последний пиксель
+          if (pntX == WIDTH - 1 && pntY == 0) {
+            FastLED.show();
+          }
         }
         break;
       case 6:
@@ -454,7 +485,11 @@ void parsing() {
           incomeBuffer[packetSize] = 0;
 
           // Оставшийся буфер преобразуем с строку
-          runningText = String(&incomeBuffer[bufIdx+1]); // 
+          if (intData[0] == 5) {  // строка картинки
+            pictureLine = String(&incomeBuffer[bufIdx+1]);
+          } if (intData[0] == 6) {  // текст бегщей строки
+            runningText = String(&incomeBuffer[bufIdx+1]);
+          }
                     
           incomingByte = ending;                       // сразу завершаем парс
           parseMode = NORMAL;
@@ -466,7 +501,6 @@ void parsing() {
     }       
   }
 #endif
-
 
   // Если есть не разобранный буфер от WiFi сокета - данные BT пока не разбираем
   // Кроме команд от BT, еслион не подключен - можновводить команды в монитор порта
@@ -493,8 +527,10 @@ void parsing() {
       } else {                                                      // если это пробел или ; конец пакета
         if (parse_index == 0) {
           byte cmdMode = string_convert.toInt();
-          if (cmdMode == 0 || cmdMode == 5) parseMode = COLOR;    // передача цвета (в отдельную переменную)
-          else if (cmdMode == 6) parseMode = TEXT;
+          if (cmdMode == 0) parseMode = COLOR;                      // передача цвета (в отдельную переменную)
+          else if (cmdMode == 6 || cmdMode == 5) {
+            parseMode = TEXT;
+          }
           else parseMode = NORMAL;
           // if (cmdMode != 7 || cmdMode != 0) runningFlag = false;
         }

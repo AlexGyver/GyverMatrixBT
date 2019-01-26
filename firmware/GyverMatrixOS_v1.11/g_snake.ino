@@ -20,7 +20,7 @@ void snakeRoutine() {
     loadingFlag = false;
     newGameSnake();
     gamemodeFlag = true;
-    modeCode = 2;
+    modeCode = MC_GAME;
   }  
   
   buttonsTickSnake();

@@ -1,7 +1,6 @@
 // работа с бегущим текстом
 
 // **************** НАСТРОЙКИ ****************
-#define TEXT_DIRECTION 1  // 1 - по горизонтали, 0 - по вертикали
 #define MIRR_V 0          // отразить текст по вертикали (0 / 1)
 #define MIRR_H 0          // отразить текст по горизонтали (0 / 1)
 
@@ -20,7 +19,7 @@ void fillString(String text, uint32_t color) {
   if (loadingFlag) {
     offset = WIDTH;   // перемотка в правый край
     loadingFlag = false;    
-    modeCode = 0;
+    modeCode = MC_TEXT;
     fullTextFlag = false;
   }
   
@@ -52,6 +51,8 @@ void fillString(String text, uint32_t color) {
 
 void drawLetter(uint8_t index, uint8_t letter, int16_t offset, uint32_t color) {
   int8_t start_pos = 0, finish_pos = LET_WIDTH;
+  int8_t offset_y = (HEIGHT - LET_HEIGHT) / 2;     // по центру матрицы по высоте
+  
   CRGB letterColor;
   if (color == 1) letterColor = CHSV(byte(offset * 10), 255, 255);
   else if (color == 2) letterColor = CHSV(byte(index * 30), 255, 255);
@@ -73,14 +74,7 @@ void drawLetter(uint8_t index, uint8_t letter, int16_t offset, uint32_t color) {
       else thisBit = thisByte & (1 << (LET_HEIGHT - 1 - j));
 
       // рисуем столбец (i - горизонтальная позиция, j - вертикальная)
-      if (TEXT_DIRECTION) {
-        if (thisBit) leds[getPixelNumber(offset + i, TEXT_HEIGHT + j)] = letterColor;
-        //else drawPixelXY(offset + i, TEXT_HEIGHT + j, 0x000000);
-      } else {
-        if (thisBit) leds[getPixelNumber(i, offset + TEXT_HEIGHT + j)] = letterColor;
-        //else drawPixelXY(i, offset + TEXT_HEIGHT + j, 0x000000);
-      }
-
+      if (thisBit) leds[getPixelNumber(offset + i, offset_y + TEXT_HEIGHT + j)] = letterColor;
     }
   }
 }
@@ -91,7 +85,7 @@ void drawLetter(uint8_t index, uint8_t letter, int16_t offset, uint32_t color) {
 uint8_t getFont(uint8_t font, uint8_t row) {
   font = font - '0' + 16;   // перевод код символа из таблицы ASCII в номер согласно нумерации массива
   if (font <= 90) return pgm_read_byte(&(fontHEX[font][row]));     // для английских букв и символов
-  else if (font >= 112 && font <= 159) {    // и пизд*ц ждя русских
+  else if (font >= 112 && font <= 159) {    // и пизд*ц для русских
     return pgm_read_byte(&(fontHEX[font - 17][row]));
   } else if (font >= 96 && font <= 111) {
     return pgm_read_byte(&(fontHEX[font + 47][row]));
@@ -101,7 +95,7 @@ uint8_t getFont(uint8_t font, uint8_t row) {
 #elif (USE_FONTS == 0)
 void fillString(String text, uint32_t color) {
   fullTextFlag = false;
-  modeCode = 0;
+  modeCode = MC_TEXT;
   return;
 }
 #endif

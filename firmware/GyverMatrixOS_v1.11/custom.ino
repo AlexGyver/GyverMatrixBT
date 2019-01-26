@@ -173,6 +173,7 @@ void nextModeHandler() {
   if (thisMode >= MODES_AMOUNT) thisMode = 0;
   loadingFlag = true;
   gamemodeFlag = false;
+  autoplayTimer = millis();
   FastLED.clear();
   FastLED.show();
 }
@@ -182,6 +183,7 @@ void prevModeHandler() {
   if (thisMode < 0) thisMode = MODES_AMOUNT - 1;
   loadingFlag = true;
   gamemodeFlag = false;
+  autoplayTimer = millis();
   FastLED.clear();
   FastLED.show();
 }
@@ -237,8 +239,8 @@ void customRoutine() {
     if (effectTimer.isReady()) {
       
 #if (OVERLAY_CLOCK == 1 && USE_CLOCK == 1)
-      if (overlayAllowed()) {
-        if (!loadingFlag && !gamemodeFlag && needUnwrap() && modeCode != 0) clockOverlayUnwrap(CLOCK_X, CLOCK_Y);
+      if (overlayEnabled && overlayAllowed()) {
+        if (!loadingFlag && !gamemodeFlag && needUnwrap() && modeCode != MC_TEXT) clockOverlayUnwrap(CLOCK_X, CLOCK_Y);
         if (loadingFlag) loadFlag2 = true;
       }
 #endif
@@ -246,8 +248,8 @@ void customRoutine() {
       customModes();                // режимы крутятся, пиксели мутятся
 
 #if (OVERLAY_CLOCK == 1 && USE_CLOCK == 1)
-      if (overlayAllowed()) {
-        if (!gamemodeFlag && modeCode != 0) clockOverlayWrap(CLOCK_X, CLOCK_Y);
+      if (overlayEnabled && overlayAllowed()) {
+        if (!gamemodeFlag && modeCode != MC_TEXT) clockOverlayWrap(CLOCK_X, CLOCK_Y);
         if (loadFlag2) {
           setOverlayColors();
           loadFlag2 = false;
@@ -272,7 +274,7 @@ void customRoutine() {
       nextMode();
     }
     if (millis() - autoplayTimer > autoplayTime && AUTOPLAY) {    // таймер смены режима
-      if (modeCode == 0 && SHOW_FULL_TEXT) {    // режим текста
+      if (modeCode == MC_TEXT && SHOW_FULL_TEXT) {    // режим текста
         if (fullTextFlag) {
           fullTextFlag = false;
           autoplayTimer = millis();
@@ -337,9 +339,9 @@ void btnsModeChange() {
     }
   }
   if (bt_set.holded()) {
-    if (modeCode == 2)
+    if (modeCode == MC_GAME)
       mazeMode = !mazeMode;
-    if (modeCode == 1) {    // вход в настройку часов
+    if (modeCode == MC_CLOCK) {    // вход в настройку часов
       clockSet = !clockSet;
       AUTOPLAY = false;
       secs = 0;

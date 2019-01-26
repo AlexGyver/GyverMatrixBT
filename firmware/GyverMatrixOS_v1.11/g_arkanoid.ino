@@ -42,7 +42,7 @@ void arkanoidRoutine() {
     FastLED.clear();
     loadingFlag = false;
     gamemodeFlag = true;
-    modeCode = 2;
+    modeCode = MC_GAME;
     newGameArkan();
     FastLED.show();
   }

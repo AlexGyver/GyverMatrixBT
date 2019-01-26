@@ -108,28 +108,28 @@ int AUTOPLAY_PERIOD = 30;     // время между авто сменой р�
 #define DEBUG 0
 #define NUM_LEDS WIDTH * HEIGHT * SEGMENTS
 
-#define RUNNING_STRING 0
-#define CLOCK_MODE 1
-#define GAME_MODE 2
-#define MADNESS_NOISE 3
-#define CLOUD_NOISE 4
-#define LAVA_NOISE 5
-#define PLASMA_NOISE 6
-#define RAINBOW_NOISE 7
-#define RAINBOWSTRIPE_NOISE 8
-#define ZEBRA_NOISE 9
-#define FOREST_NOISE 10
-#define OCEAN_NOISE 11
-#define SNOW_ROUTINE 12
-#define SPARKLES_ROUTINE 13
-#define MATRIX_ROUTINE 14
-#define STARFALL_ROUTINE 15
-#define BALL_ROUTINE 16
-#define BALLS_ROUTINE 17
-#define RAINBOW_ROUTINE 18
-#define RAINBOWDIAGONAL_ROUTINE 19
-#define FIRE_ROUTINE 20
-#define IMAGE_MODE 21
+#define MC_TEXT 0
+#define MC_CLOCK 1
+#define MC_GAME 2
+#define MC_NOISE_MADNESS 3
+#define MC_NOISE_CLOUD 4
+#define MC_NOISE_LAVA 5
+#define MC_NOISE_PLASMA 6
+#define MC_NOISE_RAINBOW 7
+#define MC_NOISE_RAINBOW_STRIP 8
+#define MC_NOISE_ZEBRA 9
+#define MC_NOISE_FOREST 10
+#define MC_NOISE_OCEAN 11
+#define MC_SNOW 12
+#define MC_SPARKLES 13
+#define MC_MATRIX 14
+#define MC_STARFALL 15
+#define MC_BALL 16
+#define MC_BALLS 17
+#define MC_RAINBOW 18
+#define MC_RAINBOW_DIAG 19
+#define MC_FIRE 20
+#define MC_IMAGE 21
 
 #if (MCU_TYPE == 1)
 #define FASTLED_INTERRUPT_RETRY_COUNT 0

@@ -252,19 +252,19 @@ void parsing() {
         effectsFlag = false;        
         runningFlag = false;
         gameFlag = false;
-        drawingFlag = false;
+        drawingFlag = true;
         // начало картинки - очистить матрицу
         if ((intData[3] == WIDTH - 1) && (intData[2] == 0)) {
           FastLED.clear(); 
           prevY = intData[3];
         }
-        drawPixelXY(intData[2], intData[3], gammaCorrection(globalColor));
         // делаем обновление матрицы каждую строчку, чтобы реже обновляться
         // и не пропускать пакеты данных (потому что отправка на большую матрицу занимает много времени)
         if (prevY != intData[3]) {
           prevY = intData[3];
           FastLED.show();
         }
+        drawPixelXY(intData[2], intData[3], gammaCorrection(globalColor));
         // Последний пиксель
         if (intData[3] == 0 && intData[2] == WIDTH - 1) {
           FastLED.show();
@@ -290,7 +290,7 @@ void parsing() {
         if (intData[1] == 0) {
           effect = intData[2];
           gameFlag = false;
-          loadingFlag = true;
+          loadingFlag = !isColorEffect(effect);
           effectsFlag = true;
           breathBrightness = globalBrightness;
           FastLED.setBrightness(globalBrightness);    // возвращаем яркость

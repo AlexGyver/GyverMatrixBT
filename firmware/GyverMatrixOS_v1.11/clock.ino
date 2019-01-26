@@ -10,46 +10,43 @@
 //                          1 - радужная смена (каждая цифра)
 //                          2 - радужная смена (часы, точки, минуты)
 
-#define MIN_COLOR CRGB::White     // цвет минут
-#define HOUR_COLOR CRGB::White    // цвет часов
-#define DOT_COLOR CRGB::White     // цвет точек
+#define MIN_COLOR CRGB::White          // цвет минут
+#define HOUR_COLOR CRGB::White         // цвет часов
+#define DOT_COLOR CRGB::White          // цвет точек
+#define CONTRAST_COLOR CRGB::Orange    // контрастный цвет часов
 
 #define HUE_STEP 5          // шаг цвета часов в режиме радужной смены
 #define HUE_GAP 30          // шаг цвета между цифрами в режиме радужной смены
 
 // эффекты, в которых отображаются часы в наложении
 byte overlayList[] = {
-  MADNESS_NOISE,
-  OCEAN_NOISE,
+  MC_GAME,
+  MC_NOISE_MADNESS,
+  MC_NOISE_CLOUD,
+  MC_NOISE_LAVA,
+  MC_NOISE_PLASMA,
+  MC_NOISE_RAINBOW,
+  MC_NOISE_RAINBOW_STRIP,
+  MC_NOISE_ZEBRA,
+  MC_NOISE_FOREST,
+  MC_NOISE_OCEAN,
+  MC_SNOW,
+  MC_SPARKLES,
+  MC_MATRIX,
+  MC_STARFALL,
+  MC_BALL,
+  MC_BALLS,
+  MC_RAINBOW,
+  MC_RAINBOW_DIAG,
+  MC_FIRE
 };
 
-/*
-   Список режимов:
-  GAME_MODE
-  MADNESS_NOISE
-  CLOUD_NOISE
-  LAVA_NOISE
-  PLASMA_NOISE
-  RAINBOW_NOISE
-  RAINBOWSTRIPE_NOISE
-  ZEBRA_NOISE
-  FOREST_NOISE
-  OCEAN_NOISE
-  SNOW_ROUTINE
-  SPARKLES_ROUTINE
-  MATRIX_ROUTINE
-  STARFALL_ROUTINE
-  BALL_ROUTINE
-  BALLS_ROUTINE
-  RAINBOW_ROUTINE
-  RAINBOWDIAGONAL_ROUTINE
-  FIRE_ROUTINE
-  IMAGE_MODE
-*/
-
 // ****************** ДЛЯ РАЗРАБОТЧИКОВ ****************
+bool overlayEnabled = true;
 byte listSize = sizeof(overlayList);
+CRGB contrastColor = CONTRAST_COLOR;
 byte clockHue;
+
 #if (OVERLAY_CLOCK == 1 && CLOCK_ORIENT == 0)
 CRGB overlayLEDs[75];
 #elif (OVERLAY_CLOCK == 1 && CLOCK_ORIENT == 1)
@@ -179,7 +176,7 @@ void drawClock(byte hrs, byte mins, boolean dots, byte X, byte Y) {
     drawPixelXY(X + 7, Y + 1, clockLED[2]);
     drawPixelXY(X + 7, Y + 3, clockLED[2]);
   } else {
-    if (modeCode == 1) {
+    if (modeCode == MC_CLOCK) {
       drawPixelXY(X + 7, Y + 1, 0);
       drawPixelXY(X + 7, Y + 3, 0);
     }
@@ -194,7 +191,7 @@ void drawClock(byte hrs, byte mins, boolean dots, byte X, byte Y) {
     drawPixelXY(X + 1, Y + 5, clockLED[2]);
     drawPixelXY(X + 5, Y + 5, clockLED[2]);
   } else {
-    if (modeCode == 1) {
+    if (modeCode == MC_CLOCK) {
       drawPixelXY(X + 1, Y + 5, 0);
       drawPixelXY(X + 5, Y + 5, 0);
     }
@@ -213,7 +210,7 @@ void clockRoutine() {
     hrs = now.hour();
 #endif
     loadingFlag = false;
-    modeCode = 1;
+    modeCode = MC_CLOCK;
   }
 
   FastLED.clear();
@@ -233,7 +230,7 @@ void clockRoutine() {
 void clockTicker() {
   if (halfsecTimer.isReady()) {
     clockHue += HUE_STEP;
-    if (needColor()) clockColor();
+    setOverlayColors();
 
     dotFlag = !dotFlag;
 // С библиотекой OldTime "закат солнца вручную" не нужен )
@@ -259,19 +256,6 @@ void clockTicker() {
     }
 #endif
   }
-}
-
-boolean needColor() {
-  if (modeCode == 1 ||
-      modeCode == 9 ||
-      modeCode == 12 ||
-      modeCode == 13 ||
-      modeCode == 14 ||
-      modeCode == 15 ||
-      modeCode == 16 ||
-      modeCode == 17 ||
-      modeCode == 20) return true;
-  else return false;
 }
 
 #else
@@ -329,47 +313,44 @@ void clockOverlayUnwrap(byte posX, byte posY) {
 
 #if (OVERLAY_CLOCK == 1 && USE_CLOCK == 1)
 boolean needUnwrap() {
-  if (modeCode == 12 ||
-      modeCode == 13 ||
-      modeCode == 14 ||
-      modeCode == 15 ||
-      modeCode == 17 ||
-      modeCode == 20) return true;
+  if (modeCode == MC_SNOW ||
+      modeCode == MC_SPARKLES ||
+      modeCode == MC_MATRIX ||
+      modeCode == MC_STARFALL ||
+      modeCode == MC_BALLS ||
+      modeCode == MC_FIRE) return true;
   else return false;
 }
 
-void blackClock() {
-  for (byte i = 0; i < 5; i++) clockLED[i] = 0;
-  clockLED[2] = CRGB::White;
+void contrastClock() {
+  for (byte i = 0; i < 5; i++) clockLED[i] = contrastColor;
 }
 
 void setOverlayColors() {
   switch (modeCode) {
-    case 1: clockColor();
+    case MC_CLOCK: 
+    case MC_GAME: 
+    case MC_SNOW:
+    case MC_SPARKLES:
+    case MC_MATRIX:
+    case MC_STARFALL:
+    case MC_BALL:
+    case MC_BALLS: 
+    case MC_FIRE: 
+      clockColor();
       break;
-    case 3:
-    case 4:
-    case 5:
-    case 6:
-    case 7:
-    case 8: blackClock();
-      break;
-    case 9: clockColor();
-      break;
-    case 10:
-    case 11: blackClock();
-      break;
-    case 12:
-    case 13:
-    case 14:
-    case 15:
-    case 16:
-    case 17: clockColor();
-      break;
-    case 18:
-    case 19: blackClock();
-      break;
-    case 20: clockColor();
+    case MC_NOISE_ZEBRA: 
+    case MC_NOISE_MADNESS:
+    case MC_NOISE_CLOUD:
+    case MC_NOISE_LAVA:
+    case MC_NOISE_PLASMA:
+    case MC_NOISE_RAINBOW:
+    case MC_NOISE_RAINBOW_STRIP: 
+    case MC_NOISE_FOREST:
+    case MC_NOISE_OCEAN: 
+    case MC_RAINBOW:
+    case MC_RAINBOW_DIAG: 
+      contrastClock();
       break;
   }
 }

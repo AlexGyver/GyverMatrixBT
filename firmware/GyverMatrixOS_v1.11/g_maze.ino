@@ -73,7 +73,7 @@ void mazeRoutine() {
     loadingFlag = false;
     newGameMaze();
     gamemodeFlag = true;
-    modeCode = 2;
+    modeCode = MC_GAME;
   }
 
   if (gameDemo) demoMaze();

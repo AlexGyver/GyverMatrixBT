@@ -71,14 +71,21 @@
 #define MODES_AMOUNT 28
 #endif
 
-void customModes() {
-  switch (thisMode) {
+String text;
 
-    case 0: fillString("КРАСНЫЙ", CRGB::Red);
+void customModes() {
+  switch (thisMode) {    
+    case 0: 
+      text = runningText == "" ? "Gyver Matrix" : runningText;
+      fillString(text, CRGB::RoyalBlue);
       break;
-    case 1: fillString("РАДУГА", 1);
+    case 1: 
+      text = runningText == "" ? "РАДУГА" : runningText;
+      fillString(text, 1);
       break;
-    case 2: fillString("RGB LED", 2);
+    case 2: 
+      text = runningText == "" ? "RGB LED" : runningText;
+      fillString(text, 2);
       break;
     case 3: madnessNoise();
       break;
@@ -131,7 +138,7 @@ void customModes() {
     case 27: clockRoutine();
       break;
 #if (USE_ANIMATION == 1 && WIDTH == 16 && HEIGHT == 16)
-    case 28: ;//animation();
+    case 28: ;//animation(); - пока не работает
       break;
 #endif      
   }
@@ -212,7 +219,9 @@ void modeFader() {
 #endif
 
 boolean loadFlag2;
+
 void customRoutine() {
+  
 #if (MCU_TYPE == 1 && WIFI_MODE == 1)
   if (WifiTimer.isReady()) {
     if (ntp_t > 0 && millis() - ntp_t > 3000) {
@@ -223,38 +232,38 @@ void customRoutine() {
     }
   }
 #endif    
-  if (!BTcontrol) {
-    if (!gamemodeFlag) {
-      if (effectTimer.isReady()) {
-#if (OVERLAY_CLOCK == 1 && USE_CLOCK == 1)
-        if (overlayAllowed()) {
-          if (!loadingFlag && !gamemodeFlag && needUnwrap() && modeCode != 0) clockOverlayUnwrap(CLOCK_X, CLOCK_Y);
-          if (loadingFlag) loadFlag2 = true;
-        }
-#endif
 
-        customModes();                // режимы крутятся, пиксели мутятся
-
+  if (!gamemodeFlag) {
+    if (effectTimer.isReady()) {
+      
 #if (OVERLAY_CLOCK == 1 && USE_CLOCK == 1)
-        if (overlayAllowed()) {
-          if (!gamemodeFlag && modeCode != 0) clockOverlayWrap(CLOCK_X, CLOCK_Y);
-          if (loadFlag2) {
-            setOverlayColors();
-            loadFlag2 = false;
-          }
-        }
-#endif
-        loadingFlag = false;
-        FastLED.show();
+      if (overlayAllowed()) {
+        if (!loadingFlag && !gamemodeFlag && needUnwrap() && modeCode != 0) clockOverlayUnwrap(CLOCK_X, CLOCK_Y);
+        if (loadingFlag) loadFlag2 = true;
       }
-    } else {
-      customModes();
-    }
-    btnsModeChange();
-#if (SMOOTH_CHANGE == 1)
-    modeFader();
 #endif
+
+      customModes();                // режимы крутятся, пиксели мутятся
+
+#if (OVERLAY_CLOCK == 1 && USE_CLOCK == 1)
+      if (overlayAllowed()) {
+        if (!gamemodeFlag && modeCode != 0) clockOverlayWrap(CLOCK_X, CLOCK_Y);
+        if (loadFlag2) {
+          setOverlayColors();
+          loadFlag2 = false;
+        }
+      }
+#endif
+      loadingFlag = false;
+    }
+  } else {
+    customModes();
   }
+  FastLED.show();
+  btnsModeChange();
+#if (SMOOTH_CHANGE == 1)
+  modeFader();
+#endif
 
   if (idleState) {
     if (fullTextFlag && SHOW_TEXT_ONCE) {

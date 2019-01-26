@@ -24,7 +24,6 @@ void fillString(String text, uint32_t color) {
     fullTextFlag = false;
   }
   
-  //if (scrollTimer.isReady() || (!BTcontrol && !gamemodeFlag)) {
   if (scrollTimer.isReady()) {
     FastLED.clear();
     byte i = 0, j = 0;
@@ -44,7 +43,10 @@ void fillString(String text, uint32_t color) {
       offset = WIDTH + 3;
       fullTextFlag = true;
     }
-    //FastLED.show();
+    
+    // Сразу показывать сформированный текст не нужно - на него могут далее налагаться эффекты мерцания / цвета
+    // там где это нужно - будет принудительный вызов FastLED.show()
+    // FastLED.show(); 
   }
 }
 

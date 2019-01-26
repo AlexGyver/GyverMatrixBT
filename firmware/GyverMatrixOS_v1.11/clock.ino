@@ -129,6 +129,24 @@ boolean overlayAllowed() {
   return false;
 }
 
+String clockCurrentText() {
+
+#if (USE_RTC == 1 && (MCU_TYPE == 0 || MCU_TYPE == 1))
+    DateTime now = rtc.now();
+    mins = now.minute();
+    hrs = now.hour();
+#else if (MCU_TYPE == 1) 
+    hrs = hour();
+    mins = minute();
+#endif
+
+  String sHrs = "0" + String(hrs);  
+  String sMin = "0" + String(mins);
+  if (sHrs.length() > 2) sHrs = sHrs.substring(1);
+  if (sMin.length() > 2) sMin = sMin.substring(1);
+  return sHrs + ":" + sMin;
+}
+
 void clockColor() {
   if (COLOR_MODE == 0) {
     clockLED[0] = MIN_COLOR;

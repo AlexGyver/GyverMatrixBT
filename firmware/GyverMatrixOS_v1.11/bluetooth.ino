@@ -189,7 +189,7 @@ int  packetSize = 0;
 char *pch;
 int pntX, pntY, pntColor, pntIdx;
 char buf[14];               // точка картинки FFFFFF XXX YYY
-String pntPart[WIDTH];
+String pntPart[WIDTH];      // массивразобранной входной строки на строки точек
 String str;
 
 // ********************* ПРИНИМАЕМ ДАННЫЕ **********************
@@ -279,10 +279,10 @@ void parsing() {
         pntIdx = 0;
         while (pch != NULL)
         {
-          pntPart[pntIdx] = String(pch);
-          pntIdx++;
+          pntPart[pntIdx++] = String(pch);
           pch = strtok (NULL, "|");
         }
+        Serial.println();
         
         for (int i=0; i<WIDTH; i++) {
           str = pntPart[i];
@@ -486,9 +486,9 @@ void parsing() {
 
           // Оставшийся буфер преобразуем с строку
           if (intData[0] == 5) {  // строка картинки
-            pictureLine = String(&incomeBuffer[bufIdx+1]);
+            pictureLine = String(&incomeBuffer[bufIdx]);
           } if (intData[0] == 6) {  // текст бегщей строки
-            runningText = String(&incomeBuffer[bufIdx+1]);
+            runningText = String(&incomeBuffer[bufIdx]);
           }
                     
           incomingByte = ending;                       // сразу завершаем парс

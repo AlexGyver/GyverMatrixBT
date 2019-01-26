@@ -189,14 +189,18 @@ void prevModeHandler() {
 }
 
 int fadeBrightness;
+int fadeStepCount = 10;     // За сколько шагов убирать/добавлять яркость при смене режимов
+int fadeStepValue = 5;      // Шаг убавления яркости
 
 #if (SMOOTH_CHANGE == 1)
 void modeFader() {
   if (fadeMode == 0) {
     fadeMode = 1;
+    fadeStepValue = fadeBrightness / fadeStepCount;
+    if (fadeStepValue < 1) fadeStepValue = 1;
   } else if (fadeMode == 1) {
     if (changeTimer.isReady()) {
-      fadeBrightness -= 40;
+      fadeBrightness -= fadeStepValue;
       if (fadeBrightness < 0) {
         fadeBrightness = 0;
         fadeMode = 2;
@@ -209,7 +213,7 @@ void modeFader() {
     else prevModeHandler();
   } else if (fadeMode == 3) {
     if (changeTimer.isReady()) {
-      fadeBrightness += 40;
+      fadeBrightness += fadeStepValue;
       if (fadeBrightness > globalBrightness) {
         fadeBrightness = globalBrightness;
         fadeMode = 4;
@@ -224,17 +228,6 @@ boolean loadFlag2;
 
 void customRoutine() {
   
-#if (MCU_TYPE == 1 && WIFI_MODE == 1)
-  if (WifiTimer.isReady()) {
-    if (ntp_t > 0 && millis() - ntp_t > 3000) {
-      ntp_t = 0;
-    }
-    if (wifi_connected && (NTPCheck.isReady() || (init_time == 0 && ntp_t == 0))) {
-      getNTP();
-    }
-  }
-#endif    
-
   if (!gamemodeFlag) {
     if (effectTimer.isReady()) {
       
@@ -263,10 +256,15 @@ void customRoutine() {
   }
   FastLED.show();
   btnsModeChange();
+  checkIdleState();
+}
+
+void checkIdleState() {
+
 #if (SMOOTH_CHANGE == 1)
   modeFader();
 #endif
-
+  
   if (idleState) {
     if (fullTextFlag && SHOW_TEXT_ONCE) {
       fullTextFlag = false;
@@ -299,7 +297,7 @@ void customRoutine() {
       FastLED.clear();
       FastLED.show();
     }
-  }
+  }  
 }
 
 #if (MCU_TYPE != 1)

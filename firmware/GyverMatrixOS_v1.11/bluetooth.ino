@@ -32,6 +32,17 @@ void bluetoothRoutine() {
   // на время принятия данных матрицу не обновляем!
   if (!parseStarted) {                          
 
+#if (MCU_TYPE == 1 && WIFI_MODE == 1)
+    if (WifiTimer.isReady()) {
+      if (ntp_t > 0 && millis() - ntp_t > 3000) { 
+        ntp_t = 0;
+      }
+      if (wifi_connected && (NTPCheck.isReady() || (init_time == 0 && ntp_t == 0))) {
+        getNTP();
+      }
+    }
+#endif    
+
     // Ручное управление из Android-программы
     if (BTcontrol) {
 
@@ -68,6 +79,7 @@ void bluetoothRoutine() {
         customModes();
         // Наложить эффект Дыхание / Цвета и вывести в матрицу
         effects();
+        checkIdleState();
       } else {
         // Сформировать и вывести на матрицу текущий демо-режим
         customRoutine();        
@@ -350,7 +362,7 @@ void parsing() {
         } else if (intData[2] == 1) {
           scrollTimer.setInterval(intData[1]);
         } else if (intData[2] == 2) {
-          gameSpeed = map(intData[1],0,255,25,375);      // для игр скорость нужно меньше!
+          gameSpeed = map(intData[1],0,255,25,375);      // для игр скорость нужна меньше!
           gameTimer.setInterval(gameSpeed);
         }
         break;
@@ -360,6 +372,17 @@ void parsing() {
         else if (intData[1] == 1) AUTOPLAY = false;
         else if (intData[1] == 2) prevMode();
         else if (intData[1] == 3) nextMode();
+
+        if (AUTOPLAY) {
+          idleState = true;                  // При включении автоматического режима сбросить таймер автосмены режимов
+          autoplayTimer = millis();
+        }
+
+        // Если при переключении в ручной режим был демонстрационный режим бегущей строки - включить ручной режим бегщей строки
+        if (intData[1] == 0 || (intData[1] == 1 && thisMode < 3)) {
+          loadingFlag = true;
+          runningFlag = true;          
+        }
         break;
       case 17: autoplayTime = ((long)intData[1] * 1000);
         autoplayTimer = millis();

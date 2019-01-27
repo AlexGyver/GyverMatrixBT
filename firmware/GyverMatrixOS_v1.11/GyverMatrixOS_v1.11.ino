@@ -151,6 +151,7 @@ uint32_t globalColor = 0x00ff00;   // цвет при запуске зелён�
 byte breathBrightness;
 boolean loadingFlag = true;
 byte frameNum;
+int scrollSpeed = D_TEXT_SPEED;
 int gameSpeed = DEMO_GAME_SPEED;
 boolean gameDemo = true;
 boolean idleState = true;  // флаг холостого режима работы

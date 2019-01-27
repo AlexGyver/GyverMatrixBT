@@ -330,26 +330,26 @@ void setOverlayColors() {
   switch (modeCode) {
     case MC_CLOCK: 
     case MC_GAME: 
-    case MC_SNOW:
     case MC_SPARKLES:
     case MC_MATRIX:
     case MC_STARFALL:
     case MC_BALL:
     case MC_BALLS: 
     case MC_FIRE: 
+    case MC_NOISE_RAINBOW:
+    case MC_NOISE_RAINBOW_STRIP: 
+    case MC_RAINBOW:
+    case MC_RAINBOW_DIAG: 
       clockColor();
       break;
+    case MC_SNOW:
     case MC_NOISE_ZEBRA: 
     case MC_NOISE_MADNESS:
     case MC_NOISE_CLOUD:
     case MC_NOISE_LAVA:
     case MC_NOISE_PLASMA:
-    case MC_NOISE_RAINBOW:
-    case MC_NOISE_RAINBOW_STRIP: 
     case MC_NOISE_FOREST:
     case MC_NOISE_OCEAN: 
-    case MC_RAINBOW:
-    case MC_RAINBOW_DIAG: 
       contrastClock();
       break;
   }

@@ -264,6 +264,7 @@ void checkIdleState() {
 #if (SMOOTH_CHANGE == 1)
   modeFader();
 #endif
+
   
   if (idleState) {
     if (fullTextFlag && SHOW_TEXT_ONCE) {
@@ -271,6 +272,7 @@ void checkIdleState() {
       autoplayTimer = millis();
       nextMode();
     }
+    
     if (millis() - autoplayTimer > autoplayTime && AUTOPLAY) {    // таймер смены режима
       if (modeCode == MC_TEXT && SHOW_FULL_TEXT) {    // режим текста
         if (fullTextFlag) {

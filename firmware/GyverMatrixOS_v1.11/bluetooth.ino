@@ -23,7 +23,9 @@ boolean parseStarted;
 String pictureLine;
 
 char incomeBuffer[UDP_TX_PACKET_MAX_SIZE];      // Буфер для приема строки команды из wifi udp сокета
-char replyBuffer[] = "ack\r\n";                 // ответ WiFi-клиенту - подтверждения получения команды
+char replyBuffer[20];                           // ответ WiFi-клиенту - подтверждения получения команды
+
+unsigned long ackCounter = 0;
 
 void bluetoothRoutine() {
   parsing();                                    // принимаем данные
@@ -48,6 +50,7 @@ void bluetoothRoutine() {
       // Если при первом включении ручных режимах ничего не установлено - показывать часы 
       if (!(runningFlag || gamemodeFlag || effectsFlag || drawingFlag)) {
         effectsFlag = true;
+        clockColor();
         effect = 9;
       }
       
@@ -190,11 +193,13 @@ char *pch;
 int pntX, pntY, pntColor, pntIdx;
 char buf[14];               // точка картинки FFFFFF XXX YYY
 String pntPart[WIDTH];      // массив разобранной входной строки на строки точек
-String str;
+
+
 
 // ********************* ПРИНИМАЕМ ДАННЫЕ **********************
 void parsing() {
-  // ****************** ОБРАБОТКА *****************
+// ****************** ОБРАБОТКА *****************
+  String str, color, text;
   /*
     Протокол связи, посылка начинается с режима. Режимы:
     0 - отправка цвета $0 colorHEX;
@@ -217,22 +222,28 @@ void parsing() {
     15 - скорость $15 скорость таймер; 0 - таймер эффектов, 1 - таймер скроллинга текста 2 - таймер игр
     16 - Режим смены эффектов: $16 value; N:  0 - Autoplay on; 1 - Autoplay off; 2 - PrevMode; 3 - NextMode
     17 - Время автосмены эффектов: $17 сек;
-  */
+    18 - Запрос текущих параметров программой: $18 page;  page: 1 - настройки; 2 - рисование; 3 - картинка; 4 - текст; 5 - эффекты; 6 - игра; 7 - часы; 8 - о приложении 
+  */  
   if (recievedFlag) {      // если получены данные
     recievedFlag = false;
 
-    if (intData[0] != 16) {
+    // Режимы 16,17,18  на сбрасывают idleTimer
+    if (intData[0] < 16 || intData[0] > 18) {
       idleTimer.reset();
       idleState = false;
     }
 
     switch (intData[0]) {
+      case 0:
+        if (!runningFlag) drawingFlag = true;
+        sendAcknowledge();
+        break;
       case 1:
         BTcontrol = true;
         if (!(drawingFlag || gameFlag)) {
             FastLED.clear();
-            drawingFlag = true;
         }
+        drawingFlag = true;
         runningFlag = false;
         if (gameFlag) gamePaused = true;
         if (!isColorEffect(effect)) {
@@ -240,30 +251,36 @@ void parsing() {
         }
         drawPixelXY(intData[1], intData[2], gammaCorrection(globalColor));
         FastLED.show();
+        sendAcknowledge();
         break;
       case 2:
         BTcontrol = true;
+        runningFlag = false;
         drawingFlag = true;
         if (!isColorEffect(effect)) {
             effectsFlag = false;
         }
         fillAll(gammaCorrection(globalColor));
         FastLED.show();
+        sendAcknowledge();
         break;
       case 3:
         BTcontrol = true;
+        runningFlag = false;
         drawingFlag = true;
         if (!isColorEffect(effect)) {
             effectsFlag = false;
         }
         FastLED.clear();
         FastLED.show();
+        sendAcknowledge();
         break;
       case 4:
         globalBrightness = intData[1];
         breathBrightness = globalBrightness;
         FastLED.setBrightness(globalBrightness);
         FastLED.show();
+        sendAcknowledge();
         break;
       case 5:
         BTcontrol = true;
@@ -311,10 +328,12 @@ void parsing() {
             FastLED.show();
           }
         }
+        sendAcknowledge();
         break;
       case 6:
         loadingFlag = true;
         // строка принимается в переменную runningText
+        sendAcknowledge();
         break;
       case 7:
         BTcontrol = true;
@@ -327,6 +346,7 @@ void parsing() {
             effectsFlag = false;
           }
         }
+        sendAcknowledge();
         break;
       case 8:
         if (intData[1] == 0) {
@@ -341,7 +361,8 @@ void parsing() {
           if (!BTcontrol) BTcontrol = !isColorEffect(effect);     // При установек эффекта дыхание / цвета / радуга пикс - переключаться в управление по BT не нужно
           if (!isColorEffect(effect)) drawingFlag = false;
         }
-        else if (intData[1] == 1) effectsFlag = !effectsFlag;
+        else if (intData[1] == 1) effectsFlag = intData[2] == 1;
+        sendAcknowledge();
         break;
       case 9:        
         BTcontrol = true;        
@@ -358,30 +379,36 @@ void parsing() {
         gamePaused = lastMode == 1;               // При возвращении из режима рисования остаямся в паузе
         game = intData[1];
         gameTimer.setInterval(gameSpeed);
+        sendAcknowledge();
         break;        
       case 10:
         BTcontrol = true;        
         buttons = 0;
         controlFlag = true;
+        sendAcknowledge();
         break;
       case 11:
         BTcontrol = true;
         buttons = 1;
         controlFlag = true;
+        sendAcknowledge();
         break;
       case 12:
         BTcontrol = true;
         buttons = 2;
         controlFlag = true;
+        sendAcknowledge();
         break;
       case 13:
         BTcontrol = true;
         buttons = 3;
         controlFlag = true;
+        sendAcknowledge();
         break;
       case 14:
         BTcontrol = true;
         gamePaused = !gamePaused;  
+        sendAcknowledge();
         break;
       case 15: 
         if (intData[2] == 0) {
@@ -390,11 +417,13 @@ void parsing() {
             effectTimer.setInterval(globalSpeed);
           }
         } else if (intData[2] == 1) {
-          scrollTimer.setInterval(intData[1]);
+          scrollSpeed = intData[1];
+          scrollTimer.setInterval(scrollSpeed);
         } else if (intData[2] == 2) {
           gameSpeed = map(intData[1],0,255,25,375);      // для игр скорость нужна меньше!
           gameTimer.setInterval(gameSpeed);
         }
+        sendAcknowledge();
         break;
       case 16:
         BTcontrol = intData[1] == 1;
@@ -402,10 +431,11 @@ void parsing() {
         else if (intData[1] == 1) AUTOPLAY = false;
         else if (intData[1] == 2) prevMode();
         else if (intData[1] == 3) nextMode();
+        else if (intData[1] == 4) AUTOPLAY = intData[2] == 1;
 
+        idleState = !BTcontrol && AUTOPLAY; 
         if (AUTOPLAY) {
-          idleState = true;                  // При включении автоматического режима сбросить таймер автосмены режимов
-          autoplayTimer = millis();
+          autoplayTimer = millis(); // При включении автоматического режима сбросить таймер автосмены режимов
         }
 
         // Если при переключении в ручной режим был демонстрационный режим бегущей строки - включить ручной режим бегщей строки
@@ -413,17 +443,100 @@ void parsing() {
           loadingFlag = true;
           runningFlag = true;          
         }
+        sendAcknowledge();
         break;
       case 17: autoplayTime = ((long)intData[1] * 1000);
-        autoplayTimer = millis();
+        idleState = !BTcontrol && AUTOPLAY; 
+        if (AUTOPLAY) {
+          autoplayTimer = millis();
+        }
+        sendAcknowledge();
+        break;
+      case 18: 
+        // W:число    ширина матрицы
+        // H:число    высота матрицы
+        // DM:Х       демо режим, где Х = 0 - выкл (ручное управление); 1 - вкл
+        // AP:Х       автосменарежимов, где Х = 0 - выкл; 1 - вкл
+        // PD:число   продолжительность режима в секундах
+        // BR:число   яркость
+        // CL:HHHHHH  текущий цвет рисования, HEX
+        // TX:[текст] текст, ограничители [] обязательны
+        // TS:Х       состояние бегущей строки, где Х = 0 - выкл; 1 - вкл
+        // ST:число   скорость прокрутки текста
+        // EF:число   текущий эффект
+        // ES:Х       состояние эффектов, где Х = 0 - выкл; 1 - вкл
+        // SE:число   скорость эффектов
+        // GM:число   текущая игра
+        // GS:Х       состояние игры, где Х = 0 - выкл; 1 - вкл
+        // SG:число   скорость игры
+        str = "";
+        switch (intData[1]) { 
+          case 0:  // Проверка связи          
+            sendAcknowledge();
+            break;
+          case 1:  // Настройки. Вернуть: Ширина/Высота матрицы; Яркость; Деморежм и Автосмена; Время смены режимо
+            str="$18 W:"+String(WIDTH)+";H:"+String(HEIGHT)+";DM:";
+            if (BTcontrol) str+="0;AP:"; else str+="1;AP:";
+            if (AUTOPLAY)  str+="1;BR:"; else str+="0;BR:";
+            str+=String(globalBrightness) + ";PD:" + String(autoplayTime / 1000) + ";";
+            break;
+          case 2:  // Рисование. Вернуть: Яркость; Цвет точки;
+            color = ("000000" + String(globalColor, HEX));
+            color = color.substring(color.length() - 6); // FFFFFF             
+            str="$18 BR:"+String(globalBrightness) + ";CL:" + color + ";";
+            break;
+          case 3:  // Картинка. Вернуть: Яркость;
+            str="$18 BR:"+String(globalBrightness) + ";";
+            break;
+          case 4:  // Текст. Вернуть: Яркость; Скорость текста; Вкл/Выкл; Текст
+            text = runningText;
+            text.replace(";","~");
+            str="$18 BR:"+String(globalBrightness) + ";ST:" + String(scrollSpeed) + ";ST:";
+            if (runningFlag)  str+="1;TX:["; else str+="0;TX:[";
+            str += text + "]" + ";";
+            break;
+          case 5:  // Эффекты. Вернуть: Номер эффекта, Остановлен или играет; Яркость; Скорость эффекта 
+            str="$18 EF:"+String(effect) + ";ES:";
+            if (effectsFlag)  str+="1;BR:"; else str+="0;BR:";
+            str+=String(globalBrightness) + ";SE:" + String(globalSpeed) + ";";
+            break;
+          case 6:  // Игры. Вернуть: Номер игры; Вкл.выкл; Яркость; Скорость игры
+            str="$18 GM:"+String(game) + ";GS:";
+            if (gameFlag && !gamePaused)  str+="1;BR:"; else str+="0;BR:";
+            str+=String(globalBrightness) + ";SG:" + String(constrain(map(gameSpeed, 25, 375, 0, 255), 0,255)) + ";"; 
+            break;
+          case 7:  // Настройки часов. Вернуть:
+            Serial.println("Настройки часов");
+            break;
+        }
+        
+        if (str.length()>0) {
+          str += "\r\n";
+          // Отправить клиенту запрошенные параметры страницы / режимов
+#if (BT_MODE == 1)
+          // После отправки команды из Андроид-программы, она ждет подтверждения получения - ответ "ack;"
+          Serial.println(str);
+#endif
+#if (WIFI_MODE == 1)
+          str.toCharArray(incomeBuffer, str.length()+1);    
+          udp.beginPacket(udp.remoteIP(), udp.remotePort());
+          udp.write(incomeBuffer);
+          udp.endPacket();
+          delay(0);
+#endif
+          // Для режимов $18 кроме 0 - Acknowledge не отправляется, вместо этогоотправляется ответная посылка
+          // Поэтому флаги откуда получена команда сбрасываем здесь. Для других команд - сбрасываются в sendAcknowledge()
+          fromWiFi = false;
+          fromBT = false;
+        }
+        else
+          sendAcknowledge();
         break;
     }
     lastMode = intData[0];  // запомнить предыдущий режим
   }
 
   // ****************** ПАРСИНГ *****************
-  fromWiFi = false;
-  fromBT = false;
   haveIncomeData = false;
 
 #if (WIFI_MODE == 1)
@@ -570,16 +683,28 @@ void parsing() {
       packetSize = 0;
     }
   }
-  
+}
+
+void sendAcknowledge() {
+#if (BT_MODE == 1)
+  // После отправки команды из Андроид-программы, она ждет подтверждения получения - ответ "ack;"
+  if (fromBT) {
+    Serial.println("ack" + String(ackCounter++) + ";\r\n");
+  }
+#endif
 #if (WIFI_MODE == 1)
-  // Если данные былиполучены по WiFi - отправить подтверждение, чтобы клиентский сокет прервал ожидание
+  // Если данные были получены по WiFi - отправить подтверждение, чтобы клиентский сокет прервал ожидание
   if (fromWiFi) {
+    String reply = "ack" + String(ackCounter++) + ";\r\n";
+    reply.toCharArray(replyBuffer, reply.length()+1);    
     udp.beginPacket(udp.remoteIP(), udp.remotePort());
     udp.write(replyBuffer);
     udp.endPacket();
+    delay(0);
   }
-#endif
-
+  fromWiFi = false;
+  fromBT = false;
+#endif  
 }
 
 // hex string to uint32_t

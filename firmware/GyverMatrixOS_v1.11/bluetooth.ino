@@ -6,8 +6,6 @@
 #define divider ' '       // разделительный символ
 #define ending ';'        // завершающий символ
 
-byte prevY = 0;
-byte prevX = 0;
 boolean runningFlag;
 boolean gameFlag;
 boolean gamePaused;
@@ -46,13 +44,6 @@ void bluetoothRoutine() {
 
     // Ручное управление из Android-программы
     if (BTcontrol) {
-
-      // Если при первом включении ручных режимах ничего не установлено - показывать часы 
-      if (!(runningFlag || gamemodeFlag || effectsFlag || drawingFlag)) {
-        effectsFlag = true;
-        clockColor();
-        effect = 9;
-      }
       
       if (runningFlag) {                         // бегущая строка - Running Text
         String text = runningText;
@@ -65,7 +56,7 @@ void bluetoothRoutine() {
         }
         fillString(text, globalColor); 
       }
-      if (gameFlag && !gamePaused) games();       // игры
+      if (gameFlag && (!gamePaused|| loadingFlag)) games();       // игры
       if (effectsFlag) effects();                 // эффекты
       
       if (runningFlag && !effectsFlag)  {         // Включенная бегущая строка только формирует строку в массиве точек матрицы, но не отображает ее
@@ -200,6 +191,7 @@ String pntPart[WIDTH];      // массив разобранной входно�
 void parsing() {
 // ****************** ОБРАБОТКА *****************
   String str, color, text;
+  byte b_tmp;
   /*
     Протокол связи, посылка начинается с режима. Режимы:
     0 - отправка цвета $0 colorHEX;
@@ -207,7 +199,7 @@ void parsing() {
     2 - заливка - $2;
     3 - очистка - $3;
     4 - яркость - $4 value;
-    5 - картинка построчно $5 colorHEX X Y|colorHEX X Y|...|colorHEX X Y;
+    5 - картинка построчно $5 Y colorHEX X|colorHEX X|...|colorHEX X;
     6 - текст $6 some text
     7 - управление текстом: $7 1; пуск, $7 0; стоп
     8 - эффект
@@ -245,7 +237,11 @@ void parsing() {
         }
         drawingFlag = true;
         runningFlag = false;
-        if (gameFlag) gamePaused = true;
+        if (gameFlag && game==1) gamePaused = true;
+        else {
+          gameFlag = false;
+          gamePaused = false;
+        }
         if (!isColorEffect(effect)) {
             effectsFlag = false;
         }
@@ -257,6 +253,8 @@ void parsing() {
         BTcontrol = true;
         runningFlag = false;
         drawingFlag = true;
+        gameFlag = false;
+        gamePaused = false;
         if (!isColorEffect(effect)) {
             effectsFlag = false;
         }
@@ -267,6 +265,8 @@ void parsing() {
       case 3:
         BTcontrol = true;
         runningFlag = false;
+        gameFlag = false;
+        gamePaused = false;
         drawingFlag = true;
         if (!isColorEffect(effect)) {
             effectsFlag = false;
@@ -284,13 +284,24 @@ void parsing() {
         break;
       case 5:
         BTcontrol = true;
+
+        if (!drawingFlag) {
+          FastLED.clear(); 
+        }
+        
         effectsFlag = false;        
         runningFlag = false;
         gameFlag = false;
         drawingFlag = true;
-        loadingFlag = true;
+        loadingFlag = false;
 
-        // строка картинки - в pictureLine в формате color X Y|color X Y|..|color X Y
+        // строка картинки - в pictureLine в формате Y colorHEX X|colorHEX X|...|colorHEX X
+
+        b_tmp = pictureLine.indexOf(" ");
+        str = pictureLine.substring(0, b_tmp);
+        pntY = str.toInt();
+        pictureLine = pictureLine.substring(b_tmp+1);
+        
         pictureLine.toCharArray(incomeBuffer, pictureLine.length()+1);
         pch = strtok (incomeBuffer,"|");
         pntIdx = 0;
@@ -306,29 +317,38 @@ void parsing() {
 
           pntColor=HEXtoInt(String(strtok(buf," ")));
           pntX=atoi(strtok(NULL," "));
-          pntY=atoi(strtok(NULL," "));
 
           // начало картинки - очистить матрицу
-          if ((pntX == 0) && (pntY == WIDTH - 1)) {
+          if ((pntX == 0) && (pntY == HEIGHT - 1)) {
             FastLED.clear(); 
-            prevY = pntY;
-          }
-          
-          // делаем обновление матрицы каждую строчку, чтобы реже обновляться
-          // и не пропускать пакеты данных (потому что отправка на большую матрицу занимает много времени)
-          if (prevY != pntY) {
-            prevY = pntY;
-            FastLED.show();
           }
           
           drawPixelXY(pntX, pntY, gammaCorrection(pntColor));
-          
-          // Последний пиксель
-          if (pntX == WIDTH - 1 && pntY == 0) {
-            FastLED.show();
-          }
         }
-        sendAcknowledge();
+        FastLED.show();
+
+        // Подтвердить прием строки изображения
+        str = "$5 " + String(pntY) + " ack" + String(ackCounter++) + ";\r\n";
+        
+#if (BT_MODE == 1)
+        // После отправки команды из Андроид-программы, она ждет подтверждения получения"
+        if (fromBT) {
+          Serial.println(str);
+        }
+#endif
+#if (WIFI_MODE == 1)
+        if (fromWiFi) { 
+          str.toCharArray(incomeBuffer, str.length()+1);    
+          udp.beginPacket(udp.remoteIP(), udp.remotePort());
+          udp.write(incomeBuffer);
+          udp.endPacket();
+          delay(0);
+        }  
+#endif
+        // так как Acknowledge не отправляется, а вместо этогоо тправляется ответная посылка,
+        // флаги откуда получена команда сбрасываем здесь. Для других команд - сбрасываются в sendAcknowledge()
+        fromWiFi = false;
+        fromBT = false;
         break;
       case 6:
         loadingFlag = true;
@@ -350,33 +370,37 @@ void parsing() {
         break;
       case 8:
         if (intData[1] == 0) {
+          
           effect = intData[2];
           gameFlag = false;
           loadingFlag = !isColorEffect(effect);
           effectsFlag = true;
-          breathBrightness = globalBrightness;
-          FastLED.setBrightness(globalBrightness);    // возвращаем яркость
           globalSpeed = intData[3];
-          effectTimer.setInterval(globalSpeed);
           if (!BTcontrol) BTcontrol = !isColorEffect(effect);     // При установек эффекта дыхание / цвета / радуга пикс - переключаться в управление по BT не нужно
           if (!isColorEffect(effect)) drawingFlag = false;
+          
+        } else if (intData[1] == 1) {
+          effectsFlag = intData[2] == 1;
         }
-        else if (intData[1] == 1) effectsFlag = intData[2] == 1;
+        
+        breathBrightness = globalBrightness;
+        FastLED.setBrightness(globalBrightness);    // возвращаем яркость
+        effectTimer.setInterval(globalSpeed);
         sendAcknowledge();
         break;
       case 9:        
         BTcontrol = true;        
-        effectsFlag = false;
-        runningFlag = false;
-        drawingFlag = false;
-        controlFlag = false;                      // Посе начала игры пока не трогаем кнопки - игра автоматическая 
-        if (lastMode != 1) {                      // начать новую игру при переходе со всех режимов кроме рисования
+        if (!drawingFlag || runningFlag) {        // начать новую игру при переходе со всех режимов кроме рисования
           loadingFlag = true;    
           FastLED.clear(); 
           FastLED.show(); 
         }
+        effectsFlag = false;
+        runningFlag = false;
+        controlFlag = false;                      // Посе начала игры пока не трогаем кнопки - игра автоматическая 
+        drawingFlag = false;
         gameFlag = true;
-        gamePaused = lastMode == 1;               // При возвращении из режима рисования остаямся в паузе
+        gamePaused = true;
         game = intData[1];
         gameTimer.setInterval(gameSpeed);
         sendAcknowledge();
@@ -385,37 +409,50 @@ void parsing() {
         BTcontrol = true;        
         buttons = 0;
         controlFlag = true;
+        gameFlag = true;
+        gamePaused = false;
         sendAcknowledge();
         break;
       case 11:
         BTcontrol = true;
         buttons = 1;
         controlFlag = true;
+        gameFlag = true;
+        gamePaused = false;
         sendAcknowledge();
         break;
       case 12:
         BTcontrol = true;
         buttons = 2;
         controlFlag = true;
+        gameFlag = true;
+        gamePaused = false;
         sendAcknowledge();
         break;
       case 13:
         BTcontrol = true;
         buttons = 3;
         controlFlag = true;
+        gameFlag = true;
+        gamePaused = false;
         sendAcknowledge();
         break;
       case 14:
         BTcontrol = true;
-        gamePaused = !gamePaused;  
+        if (!gameFlag || runningFlag) {
+          loadingFlag = true;    
+          FastLED.clear(); 
+          FastLED.show(); 
+        }
+        gameFlag = true;
+        effectsFlag = false;
+        gamePaused = intData[1] == 0;  
         sendAcknowledge();
         break;
       case 15: 
         if (intData[2] == 0) {
           globalSpeed = intData[1];          
-          if (effectsFlag) {
-            effectTimer.setInterval(globalSpeed);
-          }
+          effectTimer.setInterval(globalSpeed);
         } else if (intData[2] == 1) {
           scrollSpeed = intData[1];
           scrollTimer.setInterval(scrollSpeed);
@@ -496,12 +533,12 @@ void parsing() {
             str += text + "]" + ";";
             break;
           case 5:  // Эффекты. Вернуть: Номер эффекта, Остановлен или играет; Яркость; Скорость эффекта 
-            str="$18 EF:"+String(effect) + ";ES:";
+            str="$18 EF:"+String(effect+1) + ";ES:";
             if (effectsFlag)  str+="1;BR:"; else str+="0;BR:";
             str+=String(globalBrightness) + ";SE:" + String(globalSpeed) + ";";
             break;
           case 6:  // Игры. Вернуть: Номер игры; Вкл.выкл; Яркость; Скорость игры
-            str="$18 GM:"+String(game) + ";GS:";
+            str="$18 GM:"+String(game+1) + ";GS:";
             if (gameFlag && !gamePaused)  str+="1;BR:"; else str+="0;BR:";
             str+=String(globalBrightness) + ";SG:" + String(constrain(map(gameSpeed, 25, 375, 0, 255), 0,255)) + ";"; 
             break;

@@ -137,6 +137,8 @@ int AUTOPLAY_PERIOD = 30;     // время между авто сменой р�
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 #include <OldTime.h>
+#include <ArduinoJson.h> // Качаем библиотеку для парсинга данных о погоде
+#include <WiFiClient.h> // Для запроса о погоде
 #endif
 
 #include "FastLED.h"
@@ -227,6 +229,22 @@ RTC_DS3231 rtc;
   timerMinim WifiTimer(500);
   
   timerMinim NTPCheck(1000 * 60 * SYNC_TIME_PERIOD); // Сверяем время через SYNC_TIME_PERIOD минут
+
+  WiFiClient client;
+  
+  const char server[] = "api.openweathermap.org";
+  String nameOfCity = "london,uk"; // Задаем город и страну через зяпятую
+  String apiKey = "*****"; // Указываем свой ключ, полученный при регистрации на openweathermap.org
+
+  String text;
+  int jsonend = 0;
+  boolean startJson = false;
+  int status = WL_IDLE_STATUS;
+
+  #define JSON_BUFF_DIMENSION 2500
+  #define HPaTomm 0.7500637554192
+
+  timerMinim WeatherCheck(1000 * 60 * SYNC_WEATHER_PERIOD);
 #endif
 
 void setup() {

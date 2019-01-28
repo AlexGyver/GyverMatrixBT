@@ -222,7 +222,28 @@ void modeFader() {
 boolean loadFlag2;
 
 void customRoutine() {
-  
+#if (MCU_TYPE == 1 && WIFI_MODE == 1)
+  if (WifiTimer.isReady() && wifi_connected) {
+    if (ntp_t > 0 && millis() - ntp_t > 3000) {
+      Serial.println("NTP request timeout!");
+      ntp_t = 0;
+    }
+    if (weather_t > 0 && millis() - weather_t > 5000) {
+      weather_t = 0;
+      Serial.println("Weather request timeout!");
+      client.stop();
+    }
+    if (weather_t > 0) {
+      parseWeather();
+    }
+    if (NTPCheck.isReady() || (init_time == 0 && ntp_t == 0)) {
+      getNTP();
+    }
+    if (WeatherCheck.isReady() || (init_weather == 0 && weather_t == 0)) {
+      weatherRequest();
+    }
+  }
+   
   if (!gamemodeFlag) {
     if (effectTimer.isReady()) {
       
@@ -296,6 +317,90 @@ void checkIdleState() {
     }
   }  
 }
+
+#if (MCU_TYPE == 1)
+void weatherRequest() {
+  if (init_time == 0) {
+    return;
+  }
+  Serial.println("Weather request...");
+  client.stop();
+  
+  if (client.connect(server, 80)) {
+    Serial.println("Connected to port 80");
+    //client.println("GET /data/2.5/weather?q=" + nameOfCity + "&APPID=" + apiKey + "&mode=json&units=metric&lang=ru HTTP/1.1");
+    client.println("GET /data/2.5/forecast?q=" + nameOfCity + "&APPID=" + apiKey + "&mode=json&units=metric&cnt=2&lang=ru HTTP/1.1");
+    client.println("Host: api.openweathermap.org");
+    client.println("User-Agent: ArduinoWiFi/1.1");
+    client.println("Connection: close");
+    client.println();
+    Serial.println("Weather request sent");
+    weather_t = millis();
+  }
+  else {
+    Serial.println("Weather server connection failed!");
+  }
+}
+
+void parseWeather() {
+  char c = 0;
+  text = "";
+  while (client.available()) {
+    c = client.read();
+    if (c == '{') {
+      startJson = true;
+      jsonend++;
+    }
+    if (c == '}') {
+      jsonend--;
+    }
+    if (startJson == true) {
+      text += c;
+    }
+    if (jsonend == 0 && startJson == true) {
+      parseJson(text.c_str());
+      init_weather = 1;
+      weather_t = 0;
+      startJson = false;
+    }
+  }
+}
+
+void parseJson(const char * jsonString) {
+  const size_t bufferSize = 2*JSON_ARRAY_SIZE(1) + JSON_ARRAY_SIZE(2) + 4*JSON_OBJECT_SIZE(1) + 3*JSON_OBJECT_SIZE(2) + 3*JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(5) + 2*JSON_OBJECT_SIZE(7) + 2*JSON_OBJECT_SIZE(8) + 720;
+  DynamicJsonBuffer jsonBuffer(bufferSize);
+  
+  JsonObject& root = jsonBuffer.parseObject(jsonString);
+
+  if (!root.success()) {
+    Serial.println("parseObject() failed");
+    return;
+  }
+  JsonArray& list = root["list"];
+  JsonObject& nowT = list[0];
+  JsonObject& later = list[1];
+
+  String city = root["city"]["name"];
+
+  float tempNow = nowT["main"]["temp"];
+  float humidityNow = nowT["main"]["humidity"];
+  float windspeedNow = nowT["wind"]["speed"];
+  float pressureNow = nowT["main"]["pressure"];
+  pressureNow = pressureNow * HPaTomm;
+  String weatherNow = nowT["weather"][0]["description"];
+
+  float tempLater = later["main"]["temp"];
+  float humidityLater = later["main"]["humidity"];
+  float windspeedLater = later["wind"]["speed"];
+  float pressureLater = later["main"]["pressure"];
+  pressureLater = pressureLater * HPaTomm;
+  String weatherLater = later["weather"][0]["description"];
+
+  text = "Погода сейчас:"+weatherNow+" температура:"+ String(tempNow,1) +"C влажность:"+String(humidityNow,0)+"% ветер:"+String(windspeedNow,1)+"м/с давление:"+String(pressureNow,0)+"мм.рт.ст.";
+  Serial.println(text);
+}
+
+#endif
 
 #if (MCU_TYPE != 1)
 void timeSet(boolean type, boolean dir) {    // type: 0-часы, 1-минуты, dir: 0-уменьшить, 1-увеличить

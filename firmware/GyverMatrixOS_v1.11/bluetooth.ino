@@ -391,7 +391,7 @@ void parsing() {
           gameFlag = false;
           loadingFlag = !isColorEffect(effect);
           effectsFlag = true;
-          globalSpeed = intData[3];
+          effectSpeed = intData[3];
           if (!BTcontrol) BTcontrol = !isColorEffect(effect);     // При установек эффекта дыхание / цвета / радуга пикс - переключаться в управление по BT не нужно
           if (!isColorEffect(effect)) drawingFlag = false;
           
@@ -401,7 +401,7 @@ void parsing() {
         
         breathBrightness = globalBrightness;
         FastLED.setBrightness(globalBrightness);    // возвращаем яркость
-        effectTimer.setInterval(globalSpeed);
+        effectTimer.setInterval(effectSpeed);
         sendAcknowledge();
         break;
       case 9:        
@@ -467,13 +467,13 @@ void parsing() {
         break;
       case 15: 
         if (intData[2] == 0) {
-          globalSpeed = intData[1];          
-          effectTimer.setInterval(globalSpeed);
+          effectSpeed = map(constrain(intData[1],0,255),0,255,D_EFFECT_SPEED_MIN,D_EFFECT_SPEED_MAX); 
+          effectTimer.setInterval(effectSpeed);
         } else if (intData[2] == 1) {
-          scrollSpeed = intData[1];
+          scrollSpeed = map(constrain(intData[1],0,255),0,255,D_TEXT_SPEED_MIN,D_TEXT_SPEED_MAX); 
           scrollTimer.setInterval(scrollSpeed);
         } else if (intData[2] == 2) {
-          gameSpeed = map(intData[1],0,255,25,375);      // для игр скорость нужна меньше!
+          gameSpeed = map(constrain(intData[1],0,255),0,255,D_GAME_SPEED_MIN,D_GAME_SPEED_MAX);      // для игр скорость нужна меньше!
           gameTimer.setInterval(gameSpeed);
         }
         sendAcknowledge();
@@ -544,26 +544,26 @@ void parsing() {
           case 4:  // Текст. Вернуть: Яркость; Скорость текста; Вкл/Выкл; Текст
             text = runningText;
             text.replace(";","~");
-            str="$18 BR:"+String(globalBrightness) + ";ST:" + String(scrollSpeed) + ";ST:";
+            str="$18 BR:"+String(globalBrightness) + ";ST:" + String(constrain(map(scrollSpeed, D_TEXT_SPEED_MIN,D_TEXT_SPEED_MAX, 0, 255), 0,255)) + ";ST:";
             if (runningFlag)  str+="1;TX:["; else str+="0;TX:[";
             str += text + "]" + ";";
             break;
           case 5:  // Эффекты. Вернуть: Номер эффекта, Остановлен или играет; Яркость; Скорость эффекта 
             str="$18 EF:"+String(effect+1) + ";ES:";
             if (effectsFlag)  str+="1;BR:"; else str+="0;BR:";
-            str+=String(globalBrightness) + ";SE:" + String(globalSpeed) + ";";
+            str+=String(globalBrightness) + ";SE:" + String(constrain(map(effectSpeed, D_EFFECT_SPEED_MIN,D_EFFECT_SPEED_MAX, 0, 255), 0,255)) + ";";
             break;
           case 6:  // Игры. Вернуть: Номер игры; Вкл.выкл; Яркость; Скорость игры
             str="$18 GM:"+String(game+1) + ";GS:";
             if (gameFlag && !gamePaused)  str+="1;BR:"; else str+="0;BR:";
-            str+=String(globalBrightness) + ";SG:" + String(constrain(map(gameSpeed, 25, 375, 0, 255), 0,255)) + ";"; 
+            str+=String(globalBrightness) + ";SG:" + String(constrain(map(gameSpeed, D_GAME_SPEED_MIN,D_GAME_SPEED_MAX, 0, 255), 0,255)) + ";"; 
             break;
           case 7:  // Настройки часов. Вернуть:
             Serial.println("Настройки часов");
             break;
         }
         
-        if (str.length()>0) {
+        if (str.length() > 0) {
           str += "\r\n";
           // Отправить клиенту запрошенные параметры страницы / режимов
 #if (BT_MODE == 1)

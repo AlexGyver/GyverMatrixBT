@@ -86,9 +86,7 @@ void loadImage(const uint16_t (*frame)) {
   uint16_t w; 
   for (byte i = 0; i < WIDTH; i++) {
     for (byte j = 0; j < HEIGHT; j++) {
-      
       drawPixelXY(i, j, gammaCorrection(expandColor((pgm_read_word(&(frame[(HEIGHT - j - 1) * WIDTH + i]))))));
-      //drawPixelXY(i, j, gammaCorrection(expandColor((pgm_read_word(&(frame[HEIGHT - j - 1][i]))))));
     }
   }  
   // да, тут происходит лютенький п@здец, а именно:
@@ -101,12 +99,18 @@ void loadImage(const uint16_t (*frame)) {
 void imageRoutine() {
   if (loadingFlag) {
     loadingFlag = false;
+    modeCode = MC_IMAGE;
     loadImage(frame00);
   }
 }
 
 void animation() {
-  if (gifTimer.isReady()) {
+  if (loadingFlag) {
+    loadingFlag = false;
+    modeCode = MC_IMAGE;
+  }
+  bool isReady = BTcontrol || gifTimer.isReady();
+  if (isReady) {
     frameNum++;
     if (frameNum >= sizeof(framesArray)/sizeof(uint16_t*)) frameNum = 0;
     loadImage(framesArray[frameNum]);

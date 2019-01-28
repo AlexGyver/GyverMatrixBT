@@ -1,13 +1,11 @@
-/*
-  Скетч к проекту "Адресная матрица"
-  Гайд по постройке матрицы: https://alexgyver.ru/matrix_guide/
-  Страница проекта (схемы, описания): https://alexgyver.ru/GyverMatrixBT/
-  Подробное описание прошивки: https://alexgyver.ru/gyvermatrixos-guide/
-  Исходники на GitHub: https://github.com/AlexGyver/GyverMatrixBT/
-  Нравится, как написан код? Поддержи автора! https://alexgyver.ru/support_alex/
-  Автор: AlexGyver Technologies, 2018
-  https://AlexGyver.ru/
-*/
+// Скетч к проекту "Адресная матрица"
+// Гайд по постройке матрицы: https://alexgyver.ru/matrix_guide/
+// Страница проекта (схемы, описания): https://alexgyver.ru/GyverMatrixBT/
+// Подробное описание прошивки: https://alexgyver.ru/gyvermatrixos-guide/
+// Исходники на GitHub: https://github.com/AlexGyver/GyverMatrixBT/
+// Нравится, как написан код? Поддержи автора! https://alexgyver.ru/support_alex/
+// Автор: AlexGyver Technologies, 2018
+// https://AlexGyver.ru/
 
 // GyverMatrixOS
 // Версия прошивки 1.12, совместима с приложением GyverMatrixBT версии 1.13 и выше
@@ -37,9 +35,19 @@
 
 // ******************** ЭФФЕКТЫ И РЕЖИМЫ ********************
 #define D_TEXT_SPEED 100      // скорость бегущего текста по умолчанию (мс)
+#define D_TEXT_SPEED_MIN 10
+#define D_TEXT_SPEED_MAX 255
+
 #define D_EFFECT_SPEED 80     // скорость эффектов по умолчанию (мс)
+#define D_EFFECT_SPEED_MIN 0
+#define D_EFFECT_SPEED_MAX 255
+
 #define D_GAME_SPEED 250      // скорость игр по умолчанию (мс)
+#define D_GAME_SPEED_MIN 25
+#define D_GAME_SPEED_MAX 375
+
 #define D_GIF_SPEED 100       // скорость гифок (мс)
+
 #define DEMO_GAME_SPEED 60    // скорость игр в демо режиме (мс)
 
 boolean AUTOPLAY = 1;         // 0 выкл / 1 вкл автоматическую смену режимов (откл. можно со смартфона)
@@ -137,8 +145,8 @@ int AUTOPLAY_PERIOD = 30;     // время между авто сменой р�
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 #include <OldTime.h>
-#include <ArduinoJson.h> // Качаем библиотеку для парсинга данных о погоде dthcbb 5.xx. Версия 6.xx - не совместима
-#include <WiFiClient.h> // Для запроса о погоде
+#include <ArduinoJson.h> // Качаем библиотеку для парсинга данных о погоде версии 5.xx. Версия 6.xx - не совместима
+#include <WiFiClient.h>  // Для запроса о погоде
 #endif
 
 #include "FastLED.h"
@@ -148,13 +156,19 @@ String runningText = "";
 static const byte maxDim = max(WIDTH, HEIGHT);
 byte buttons = 4;   // 0 - верх, 1 - право, 2 - низ, 3 - лево, 4 - не нажата
 int globalBrightness = BRIGHTNESS;
-byte globalSpeed = 200;
-uint32_t globalColor = 0x00ff00;   // цвет при запуске зелёный
 byte breathBrightness;
+uint32_t globalColor = 0x00ff00;   // цвет при запуске зелёный
 boolean loadingFlag = true;
 byte frameNum;
 int scrollSpeed = D_TEXT_SPEED;
 int gameSpeed = DEMO_GAME_SPEED;
+
+//----------------------------------------------------------------------
+int effects_speed = D_EFFECT_SPEED; // !!! Arduino IDE 1.8.8 - эта переменная нигде не используется, но если ее удалить или закомментировать
+                                    // !!!                     проект перестает компилироваться с ошибкой IPAddress и CRGB - неизвестные типы
+//----------------------------------------------------------------------
+
+int effectSpeed = D_EFFECT_SPEED;
 boolean gameDemo = true;
 boolean idleState = true;  // флаг холостого режима работы
 boolean BTcontrol = false;  // флаг контроля с блютус или WiFi. Если false - управление с кнопок
@@ -162,8 +176,7 @@ int8_t thisMode = 0;
 boolean controlFlag = false;
 boolean gamemodeFlag = false;
 boolean mazeMode = false;
-int effects_speed = D_EFFECT_SPEED;
-int8_t hrs = 10, mins = 25, secs;
+int8_t hrs = 0, mins = 0, secs = 0;
 boolean dotFlag;
 byte modeCode;    // 0 бегущая, 1 часы, 2 игры, 3 нойс маднесс и далее, 21 гифка или картинка,
 boolean fullTextFlag = false;

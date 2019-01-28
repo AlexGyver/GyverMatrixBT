@@ -485,9 +485,19 @@ void btnsModeChange() {
     if (bt_right.holding())
       if (changeTimer.isReady()) {
         if (!clockSet) {
-          effects_speed -= 2;
-          if (effects_speed < 30) effects_speed = 30;
-          effectTimer.setInterval(effects_speed);
+          if (scrollFlag) {
+            scrollSpeed -= 2;
+            if (scrollSpeed < D_TEXT_SPEED_MIN) scrollSpeed = D_TEXT_SPEED_MIN;
+            scrollTimer.setInterval(scrollSpeed);
+          } else if (effectFlag) {
+            effectSpeed -= 2;
+            if (effectSpeed < D_EFFECT_SPEED_MIN) effectSpeed = D_EFFECT_SPEED_MIN;
+            effectTimer.setInterval(effectSpeed);
+          } else if (gameFlag) {
+            gameSpeed -= 2;
+            if (gameSpeed < D_GAME_SPEED_MIN) gameSpeed = D_GAME_SPEED_MIN;
+            ganeTimer.setInterval(gameSpeed);
+          }
         } else {
 #if (MCU_TYPE == 1)
           adjustTime(60);
@@ -499,9 +509,19 @@ void btnsModeChange() {
     if (bt_left.holding())
       if (changeTimer.isReady()) {
         if (!clockSet) {
-          effects_speed += 2;
-          if (effects_speed > 300) effects_speed = 300;
-          effectTimer.setInterval(effects_speed);
+          if (scrollFlag) {
+            scrollSpeed += 2;
+            if (scrollSpeed > D_TEXT_SPEED_MAX) scrollSpeed = D_TEXT_SPEED_MAX;
+            scrollTimer.setInterval(scrollSpeed);
+          } else if (effectFlag) {
+            effectSpeed += 2;
+            if (effectSpeed > D_EFFECT_SPEED_MAX) effectSpeed = D_EFFECT_SPEED_MAX;
+            effectTimer.setInterval(effectSpeed);
+          } else if (gameFlag) {
+            gameSpeed += 2;
+            if (gameSpeed > D_GAME_SPEED_MAX) gameSpeed = D_GAME_SPEED_MAX;
+            gameTimer.setInterval(gameSpeed);
+          }
         } else {
 #if (MCU_TYPE == 1)
           adjustTime(-60);

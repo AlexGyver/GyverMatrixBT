@@ -128,7 +128,7 @@ void rainbowRoutine() {
   modeCode = MC_RAINBOW;
   hue += 3;
   for (byte i = 0; i < WIDTH; i++) {
-    CHSV thisColor = CHSV((byte)(hue + i * float(255 / WIDTH)), 255, 255);
+    CRGB thisColor = CHSV((byte)(hue + i * float(255 / WIDTH)), 255, 255);
     for (byte j = 0; j < HEIGHT; j++)      
       drawPixelXY(i, j, thisColor);   //leds[getPixelNumber(i, j)] = thisColor;
   }
@@ -140,7 +140,7 @@ void rainbowDiagonalRoutine() {
   hue += 3;
   for (byte x = 0; x < WIDTH; x++) {
     for (byte y = 0; y < HEIGHT; y++) {
-      CHSV thisColor = CHSV((byte)(hue + (float)(WIDTH / HEIGHT * x + y) * (float)(255 / maxDim)), 255, 255);      
+      CRGB thisColor = CHSV((byte)(hue + (float)(WIDTH / HEIGHT * x + y) * (float)(255 / maxDim)), 255, 255);      
       drawPixelXY(x, y, thisColor); //leds[getPixelNumber(i, j)] = thisColor;
     }
   }
@@ -151,7 +151,7 @@ void rainbowDiagonalRoutine() {
 void rainbowColorsRoutine() {
   hue++;
   for (byte i = 0; i < WIDTH; i++) {
-    CHSV thisColor = CHSV((byte)(hue + i * float(255 / WIDTH)), 255, 255);
+    CRGB thisColor = CHSV((byte)(hue + i * float(255 / WIDTH)), 255, 255);
     for (byte j = 0; j < HEIGHT; j++)
       if (getPixColor(getPixelNumber(i, j)) > 0) drawPixelXY(i, j, thisColor);
   }
@@ -385,52 +385,6 @@ void ballsRoutine() {
   }
 }
 
-
-/*
-  // ******************************** СИНУСОИДЫ *******************************
-  #define DEG_TO_RAD 0.017453
-  int t;
-  byte w[WAVES_AMOUNT];
-  byte phi[WAVES_AMOUNT];
-  byte A[WAVES_AMOUNT];
-  CRGB waveColors[WAVES_AMOUNT];
-
-  void wavesRoutine() {
-  if (loadingFlag) {
-    loadingFlag = false;
-    for (byte j = 0; j < WAVES_AMOUNT; j++) {
-      // забиваем случайными данными
-      w[j] = random(17, 25);
-      phi[j] = random(0, 360);
-      A[j] = HEIGHT / 2 * random(4, 11) / 10;
-      waveColors[j] = CHSV(random(0, 9) * 28, 255, 255);
-    }
-  }
-  if (effectTimer.isReady()) {
-
-    // сдвигаем все пиксели вправо
-    for (int i = WIDTH - 1; i > 0; i--)
-      for (int j = 0; j < HEIGHT; j++)
-        drawPixelXY(i, j, getPixColorXY(i - 1, j));
-
-    // увеличиваем "угол"
-    t++;
-    if (t > 360) t = 0;
-
-    // заливаем чёрным левую линию
-    for (byte i = 0; i < HEIGHT; i++) {
-      drawPixelXY(0, i, 0x000000);
-    }
-
-    // генерируем позицию точки через синус
-    for (byte j = 0; j < WAVES_AMOUNT; j++) {
-      float value = HEIGHT / 2 + (float)A[j] * sin((float)w[j] * t * DEG_TO_RAD + (float)phi[j] * DEG_TO_RAD);
-      leds[getPixelNumber(0, (byte)value)] = waveColors[j];
-    }
-  }
-  }
-*/
-
 // функция плавного угасания цвета для всех пикселей
 void fader(byte step) {
   for (byte i = 0; i < WIDTH; i++) {
@@ -451,38 +405,6 @@ void fadePixel(byte i, byte j, byte step) {     // новый фейдер
     leds[pixelNum] = 0;
   }
 }
-
-/*
-  void fadePixel(byte i, byte j, byte step) {     // старый фейдер
-  // измеряяем цвет текущего пикселя
-  uint32_t thisColor = getPixColorXY(i, j);
-
-  // если 0, то пропускаем действия и переходим к следующему
-  if (thisColor == 0) return;
-
-  // разбиваем цвет на составляющие RGB
-  byte rgb[3];
-  rgb[0] = (thisColor >> 16) & 0xff;
-  rgb[1] = (thisColor >> 8) & 0xff;
-  rgb[2] = thisColor & 0xff;
-
-  // ищем максимум
-  byte maximum = max(max(rgb[0], rgb[1]), rgb[2]);
-  float coef = 0;
-
-  // если есть возможность уменьшить
-  if (maximum >= step)
-    // уменьшаем и находим коэффициент уменьшения
-    coef = (float)(maximum - step) / maximum;
-
-  // далее все цвета умножаем на этот коэффициент
-  for (byte i = 0; i < 3; i++) {
-    if (rgb[i] > 0) rgb[i] = (float)rgb[i] * coef;
-    else rgb[i] = 0;
-  }
-  leds[getPixelNumber(i, j)] = CRGB(rgb[0], rgb[1], rgb[2]);
-  }
-*/
 
 // ********************* ЗВЕЗДОПАД ******************
 void starfallRoutine() {

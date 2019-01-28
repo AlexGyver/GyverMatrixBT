@@ -58,8 +58,7 @@ CRGB clockLED[5] = {HOUR_COLOR, HOUR_COLOR, DOT_COLOR, MIN_COLOR, MIN_COLOR};
 
 #if (MCU_TYPE == 1)
 // send an NTP request to the time server at the given address
-unsigned long sendNTPpacket(IPAddress& address)
-{
+unsigned long sendNTPpacket(IPAddress& address) {
 #if (BT_MODE == 0)  
   Serial.println("sending NTP packet...");
 #endif  

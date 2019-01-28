@@ -130,6 +130,8 @@ String clockCurrentText() {
 
 #if (USE_RTC == 1 && (MCU_TYPE == 0 || MCU_TYPE == 1))
     DateTime now = rtc.now();
+    time_t t = now;
+    setTime(t);
     mins = now.minute();
     hrs = now.hour();
 #else if (MCU_TYPE == 1) 
@@ -243,6 +245,8 @@ void clockTicker() {
 
 #if (USE_RTC == 1 && (MCU_TYPE == 0 || MCU_TYPE == 1))
         DateTime now = rtc.now();
+        time_t t = now; // Устанавливаем время в библиотеке OldTimer
+        setTime(t);
         secs = now.second();
         mins = now.minute();
         hrs = now.hour();

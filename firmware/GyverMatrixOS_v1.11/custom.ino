@@ -222,27 +222,6 @@ void modeFader() {
 boolean loadFlag2;
 
 void customRoutine() {
-#if (MCU_TYPE == 1 && WIFI_MODE == 1)
-  if (WifiTimer.isReady() && wifi_connected) {
-    if (ntp_t > 0 && millis() - ntp_t > 3000) {
-      Serial.println("NTP request timeout!");
-      ntp_t = 0;
-    }
-    if (weather_t > 0 && millis() - weather_t > 5000) {
-      weather_t = 0;
-      Serial.println("Weather request timeout!");
-      client.stop();
-    }
-    if (weather_t > 0) {
-      parseWeather();
-    }
-    if (NTPCheck.isReady() || (init_time == 0 && ntp_t == 0)) {
-      getNTP();
-    }
-    if (WeatherCheck.isReady() || (init_weather == 0 && weather_t == 0)) {
-      weatherRequest();
-    }
-  }
    
   if (!gamemodeFlag) {
     if (effectTimer.isReady()) {

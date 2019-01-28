@@ -5,11 +5,6 @@
 #define SHOW_FULL_TEXT 1    // не переключать режим, пока текст не покажется весь
 #define SHOW_TEXT_ONCE 1    // показывать бегущий текст только 1 раз
 
-// подключаем внешние файлы с картинками
-#if (USE_ANIMATION == 1 && WIDTH == 16 && HEIGHT == 16)
-#include "bitmap2.h"
-#endif
-
 /*
    Режимы:
     clockRoutine();       // часы на чёрном фоне
@@ -138,7 +133,7 @@ void customModes() {
     case 27: clockRoutine();
       break;
 #if (USE_ANIMATION == 1 && WIDTH == 16 && HEIGHT == 16)
-    case 28: ;//animation(); - пока не работает
+    case 28: animation();
       break;
 #endif      
   }

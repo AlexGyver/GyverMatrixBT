@@ -39,7 +39,7 @@
 #define D_TEXT_SPEED 100      // скорость бегущего текста по умолчанию (мс)
 #define D_EFFECT_SPEED 80     // скорость эффектов по умолчанию (мс)
 #define D_GAME_SPEED 250      // скорость игр по умолчанию (мс)
-#define D_GIF_SPEED 80        // скорость гифок (мс)
+#define D_GIF_SPEED 100       // скорость гифок (мс)
 #define DEMO_GAME_SPEED 60    // скорость игр в демо режиме (мс)
 
 boolean AUTOPLAY = 1;         // 0 выкл / 1 вкл автоматическую смену режимов (откл. можно со смартфона)
@@ -181,6 +181,11 @@ timerMinim scrollTimer(D_TEXT_SPEED);
 timerMinim idleTimer((long)IDLE_TIME * 1000);
 timerMinim changeTimer(70);
 timerMinim halfsecTimer(500);
+
+// подключаем внешние файлы с картинками
+#if (USE_ANIMATION == 1 && WIDTH == 16 && HEIGHT == 16)
+#include "bitmap2.h"
+#endif
 
 #if (USE_CLOCK == 1 && (MCU_TYPE == 0 || MCU_TYPE == 1))
 

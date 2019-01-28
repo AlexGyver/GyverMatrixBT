@@ -25,7 +25,7 @@ char replyBuffer[20];                           // ответ WiFi-клиент�
 
 unsigned long ackCounter = 0;
 
-void bluetoothRoutine() {
+void bluetoothRoutine() {  
   parsing();                                    // принимаем данные
 
   // на время принятия данных матрицу не обновляем!
@@ -134,6 +134,10 @@ void effects() {
         break;
       case 21: oceanNoise();
         break;
+#if (USE_ANIMATION == 1 && WIDTH == 16 && HEIGHT == 16)
+      case 22: animation();
+        break;
+#endif        
     }
     FastLED.show();
   }
@@ -219,7 +223,7 @@ void parsing() {
   if (recievedFlag) {      // если получены данные
     recievedFlag = false;
 
-    // Режимы 16,17,18  на сбрасывают idleTimer
+    // Режимы 16,17,18  не сбрасывают idleTimer
     if (intData[0] < 16 || intData[0] > 18) {
       idleTimer.reset();
       idleState = false;

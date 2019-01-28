@@ -66,8 +66,6 @@
 #define MODES_AMOUNT 28
 #endif
 
-String text;
-
 void customModes() {
   switch (thisMode) {    
     case 0: 

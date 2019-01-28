@@ -137,7 +137,7 @@ int AUTOPLAY_PERIOD = 30;     // время между авто сменой р�
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 #include <OldTime.h>
-#include <ArduinoJson.h> // Качаем библиотеку для парсинга данных о погоде
+#include <ArduinoJson.h> // Качаем библиотеку для парсинга данных о погоде dthcbb 5.xx. Версия 6.xx - не совместима
 #include <WiFiClient.h> // Для запроса о погоде
 #endif
 
@@ -218,18 +218,16 @@ RTC_DS3231 rtc;
   const char* ntpServerName = "time.nist.gov";
   #define NTP_PACKET_SIZE 48 // NTP время в первых 48 байтах сообщения
   #define SYNC_TIME_PERIOD 60
+  #define SYNC_WEATHER_PERIOD 60
   byte packetBuffer[ NTP_PACKET_SIZE]; // буффер для хранения входящих и исходящих пакетов
 
   WiFiUDP udp;
   long timeZoneOffset = 2L;            // set this to the offset in seconds to your local time;
   long daylight = 1;
   unsigned int localPort = 2390;       // local port to listen for UDP packets
-  long ntp_t = 0;
-  byte init_time = 0;
-  timerMinim WifiTimer(500);
+  long ntp_t = 0, weather_t = 0;
+  byte init_time = 0, init_weather = 0;
   
-  timerMinim NTPCheck(1000 * 60 * SYNC_TIME_PERIOD); // Сверяем время через SYNC_TIME_PERIOD минут
-
   WiFiClient client;
   
   const char server[] = "api.openweathermap.org";
@@ -244,7 +242,10 @@ RTC_DS3231 rtc;
   #define JSON_BUFF_DIMENSION 2500
   #define HPaTomm 0.7500637554192
 
+  timerMinim WifiTimer(500);  
+  timerMinim NTPCheck(1000 * 60 * SYNC_TIME_PERIOD);            // Сверяем время через SYNC_TIME_PERIOD минут
   timerMinim WeatherCheck(1000 * 60 * SYNC_WEATHER_PERIOD);
+  
 #endif
 
 void setup() {

@@ -377,7 +377,7 @@ void parseJson(const char * jsonString) {
   
   // Формируем строку с сообщением о погоде
   runningText = "Погода сейчас:"+weatherNow+" температура:"+ String(tempNow,1) +"C влажность:"+String(humidityNow,0)+"% ветер:"+String(windspeedNow,1)+"м/с давление:"+String(pressureNow,0)+"мм.рт.ст.";
-  Serial.println(text);
+  Serial.println(runningText);
 }
 
 #endif

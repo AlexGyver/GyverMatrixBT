@@ -26,7 +26,7 @@ void bluetoothRoutine() {
   // на время принятия данных матрицу не обновляем!
   if (!parseStarted) {                          
 
-    #if (MCU_TYPE == 1 && WIFI_MODE == 1 && (USE_CLOCK == 1 || USE_WEATHER == 1))
+    #if (MCU_TYPE == 1 && WIFI_MODE == 1 && (USE_CLOCK == 1 || GET_WEATHER == 1))
       if (WifiTimer.isReady() && wifi_connected) {
   
         #if (USE_CLOCK == 1)    
@@ -39,7 +39,7 @@ void bluetoothRoutine() {
           }
         #endif
       
-        #if (USE_WEATHER == 1)    
+        #if (GET_WEATHER == 1)    
           if (weather_t > 0 && millis() - weather_t > 5000) {
             weather_t = 0;
             Serial.println("Weather request timeout!");

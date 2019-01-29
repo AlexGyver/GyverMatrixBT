@@ -388,7 +388,7 @@ void checkIdleState() {
   }  
 }
 
-#if (USE_WEATHER == 1)
+#if (GET_WEATHER == 1)
 void weatherRequest() {  
   #if (USE_CLOCK == 1)
     if (init_time == 0) return;

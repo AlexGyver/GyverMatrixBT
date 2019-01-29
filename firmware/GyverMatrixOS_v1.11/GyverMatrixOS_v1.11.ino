@@ -121,6 +121,8 @@ int AUTOPLAY_PERIOD = 30;     // время между авто сменой р�
 
 CRGB leds[NUM_LEDS];
 
+#define GET_WEATHER (USE_WEATHER == 1 && WIFI_MODE == 1)      // Прогноз погоды с интернета - только при наличии WiFi
+
 // не забудьте указать количество режимов для корректного переключения с последнего на первый
 // количество кастомных режимов (которые переключаются сами или кнопкой)
 #if (USE_ANIMATION == 1 && WIDTH == 16 && HEIGHT == 16)  // Анимация в bitmap.h - фреймы подготовлены только для матрицы 16x16
@@ -165,7 +167,7 @@ CRGB leds[NUM_LEDS];
     #include <OldTime.h>
   #endif
 
-  #if (USE_WEATHER == 1)
+  #if (GET_WEATHER == 1)
     #include <ArduinoJson.h> // Качаем библиотеку для парсинга данных о погоде версии 5.xx. Версия 6.xx - не совместима
     #include <WiFiClient.h>  // Для запроса о погоде
   #endif
@@ -228,18 +230,19 @@ timerMinim halfsecTimer(500);
 
 // подключаем внешние файлы с картинками
 #if (USE_ANIMATION == 1 && WIDTH == 16 && HEIGHT == 16)
-#include "bitmap2.h"
+  #include "bitmap2.h"
 #endif
 
 #if (USE_CLOCK == 1 && (MCU_TYPE == 0 || MCU_TYPE == 1))
+  #include "RTClib.h"
+  #if (USE_RTC == 1)
+  #include <Wire.h>
+  RTC_DS3231 rtc;
+  // RTC_DS1307 rtc;
+  #endif
+#endif
 
-#include "RTClib.h"
-#if (USE_RTC == 1)
-#include <Wire.h>
-RTC_DS3231 rtc;
-// RTC_DS1307 rtc;
-#endif
-#endif
+  String text;
 
 #if (MCU_TYPE == 1)
 
@@ -248,25 +251,25 @@ RTC_DS3231 rtc;
 // точно таком же формате вынесен в отдельный файл 'WiFiNet.h' и переменные при сборке скетча будут браться из него.
 
 // #define public
-#ifndef public 
-#include "WiFiNet.h"          // приватные данные и пароли доступа к WiFi сети
-#else
-  char ssid[] = "****";       // SSID (имя) вашего роутера
-  char pass[] = "****";       // пароль роутера
+#if (WIFI_MODE == 1)
+  #ifndef public 
+    #include "WiFiNet.h"          // приватные данные и пароли доступа к WiFi сети
+  #else
+    char ssid[] = "****";       // SSID (имя) вашего роутера
+    char pass[] = "****";       // пароль роутера
 
-  // Htubcnhfwbjyyst lfyyst r gjujlyjve cthdthe
-  #if (USE_WEATHER == 1)
-    const char server[] = "api.openweathermap.org"; // Сервер для получения погоды
-    String nameOfCity = "london,uk";                // Задаем город и страну через зяпятую
-    String apiKey = "*****";                        // Указываем свой ключ, полученный при регистрации на openweathermap.org
+    // Htubcnhfwbjyyst lfyyst r gjujlyjve cthdthe
+    #if (GET_WEATHER == 1)
+      const char server[] = "api.openweathermap.org"; // Сервер для получения погоды
+      String nameOfCity = "london,uk";                // Задаем город и страну через зяпятую
+      String apiKey = "*****";                        // Указываем свой ключ, полученный при регистрации на openweathermap.org
+    #endif
   #endif
-#endif
-
-  String text;
   WiFiUDP udp;
   unsigned int localPort = 2390;       // local port to listen for UDP packets
+#endif
 
-#if (USE_CLOCK == 1 || USE_WEATHER == 1)
+#if (USE_CLOCK == 1 || GET_WEATHER == 1)
   timerMinim WifiTimer(500);  
 #endif 
 
@@ -285,7 +288,7 @@ RTC_DS3231 rtc;
   timerMinim NTPCheck(1000 * 60 * SYNC_TIME_PERIOD);            // Сверяем время через SYNC_TIME_PERIOD минут
 #endif
 
-#if (USE_WEATHER == 1)
+#if (GET_WEATHER == 1)
   WiFiClient client;
 
   #define SYNC_WEATHER_PERIOD 60
@@ -345,14 +348,13 @@ void setup() {
 }
 
 void loop() {
-#if (MCU_TYPE == 1 && WIFI_MODE == 1)
   checkWiFiConnection(); 
-#endif
   bluetoothRoutine();
 }
 
 // -----------------------------------------
 
+#if (MCU_TYPE == 1 && WIFI_MODE == 1)
 bool wifi_connected = false;
 bool printed_1 = false;
 bool printed_2 = false;
@@ -387,3 +389,6 @@ void checkWiFiConnection() {
     udp.begin(localPort);
   }
 }
+#else
+void checkWiFiConnection() { } 
+#endif  

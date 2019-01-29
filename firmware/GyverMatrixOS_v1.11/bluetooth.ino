@@ -1,19 +1,14 @@
 // вкладка работы с bluetooth
 
 #if (BT_MODE == 1 || WIFI_MODE == 1)
-#define PARSE_AMOUNT 4    // максимальное количество значений в массиве, который хотим получить
-#define header '$'        // стартовый символ
-#define divider ' '       // разделительный символ
-#define ending ';'        // завершающий символ
+#define PARSE_AMOUNT 4       // максимальное количество значений в массиве, который хотим получить
+#define header '$'           // стартовый символ
+#define divider ' '          // разделительный символ
+#define ending ';'           // завершающий символ
 
-boolean runningFlag;
-boolean gameFlag;
-boolean gamePaused;
-boolean drawingFlag;
-boolean effectsFlag;
-byte game;
-byte effect;
-byte intData[PARSE_AMOUNT];                     // массив численных значений после парсинга
+boolean gamePaused;          // игра приостановлена
+
+byte intData[PARSE_AMOUNT];  // массив численных значений после парсинга
 uint32_t prevColor;
 boolean recievedFlag;
 byte lastMode = 0;
@@ -31,28 +26,34 @@ void bluetoothRoutine() {
   // на время принятия данных матрицу не обновляем!
   if (!parseStarted) {                          
 
-#if (MCU_TYPE == 1 && WIFI_MODE == 1)
-  if (WifiTimer.isReady() && wifi_connected) {
-    if (ntp_t > 0 && millis() - ntp_t > 3000) {
-      Serial.println("NTP request timeout!");
-      ntp_t = 0;
-    }
-    if (weather_t > 0 && millis() - weather_t > 5000) {
-      weather_t = 0;
-      Serial.println("Weather request timeout!");
-      client.stop();
-    }
-    if (weather_t > 0) {
-      parseWeather();
-    }
-    if (NTPCheck.isReady() || (init_time == 0 && ntp_t == 0)) {
-      getNTP();
-    }
-    if (WeatherCheck.isReady() || (init_weather == 0 && weather_t == 0)) {
-      weatherRequest();
-    }
-  }
-#endif    
+    #if (MCU_TYPE == 1 && WIFI_MODE == 1 && (USE_CLOCK == 1 || USE_WEATHER == 1))
+      if (WifiTimer.isReady() && wifi_connected) {
+  
+        #if (USE_CLOCK == 1)    
+          if (ntp_t > 0 && millis() - ntp_t > 3000) {
+            Serial.println("NTP request timeout!");
+            ntp_t = 0;
+          }
+          if (NTPCheck.isReady() || (init_time == 0 && ntp_t == 0)) {
+            getNTP();
+          }
+        #endif
+      
+        #if (USE_WEATHER == 1)    
+          if (weather_t > 0 && millis() - weather_t > 5000) {
+            weather_t = 0;
+            Serial.println("Weather request timeout!");
+            client.stop();
+          }
+          if (weather_t > 0) {
+            parseWeather();
+          }
+          if (WeatherCheck.isReady() || (init_weather == 0 && weather_t == 0)) {
+            weatherRequest();
+          }
+        #endif
+      }
+    #endif    
 
     // Ручное управление из Android-программы
     if (BTcontrol) {
@@ -206,7 +207,7 @@ String pntPart[WIDTH];      // массив разобранной входно�
 // ********************* ПРИНИМАЕМ ДАННЫЕ **********************
 void parsing() {
 // ****************** ОБРАБОТКА *****************
-  String str, color, text;
+  String str;
   byte b_tmp;
   /*
     Протокол связи, посылка начинается с режима. Режимы:
@@ -231,6 +232,7 @@ void parsing() {
     16 - Режим смены эффектов: $16 value; N:  0 - Autoplay on; 1 - Autoplay off; 2 - PrevMode; 3 - NextMode
     17 - Время автосмены эффектов: $17 сек;
     18 - Запрос текущих параметров программой: $18 page;  page: 1 - настройки; 2 - рисование; 3 - картинка; 4 - текст; 5 - эффекты; 6 - игра; 7 - часы; 8 - о приложении 
+    19 - работа с настройками часов
   */  
   if (recievedFlag) {      // если получены данные
     recievedFlag = false;
@@ -294,6 +296,7 @@ void parsing() {
       case 4:
         globalBrightness = intData[1];
         breathBrightness = globalBrightness;
+        saveBrightness(globalBrightness);
         FastLED.setBrightness(globalBrightness);
         FastLED.show();
         sendAcknowledge();
@@ -391,18 +394,28 @@ void parsing() {
           gameFlag = false;
           loadingFlag = !isColorEffect(effect);
           effectsFlag = true;
-          effectSpeed = intData[3];
-          if (!BTcontrol) BTcontrol = !isColorEffect(effect);     // При установек эффекта дыхание / цвета / радуга пикс - переключаться в управление по BT не нужно
+          if (!BTcontrol) BTcontrol = !isColorEffect(effect);     // При установке эффекта дыхание / цвета / радуга пикс - переключаться в управление по BT не нужно
           if (!isColorEffect(effect)) drawingFlag = false;
           
+          effectSpeed = getEffectSpeed(effect);
+          effectTimer.setInterval(effectSpeed);
+
+          // Отправить программе актуальное состояние параметров эффектов (5 - страница "Эффекты")
+          sendPageParams(5);
+          
         } else if (intData[1] == 1) {
+          effectSpeed = getEffectSpeed(effect);
+          effectTimer.setInterval(effectSpeed);
           effectsFlag = intData[2] == 1;
         }
         
         breathBrightness = globalBrightness;
-        FastLED.setBrightness(globalBrightness);    // возвращаем яркость
-        effectTimer.setInterval(effectSpeed);
-        sendAcknowledge();
+        FastLED.setBrightness(globalBrightness);    
+        
+        // Для "0" - отправляются параметры, подтверждение отправлять не нужно. Для остальных - нужно
+        if (intData[1] != 0) {
+          sendAcknowledge();
+        }
         break;
       case 9:        
         BTcontrol = true;        
@@ -418,8 +431,10 @@ void parsing() {
         gameFlag = true;
         gamePaused = true;
         game = intData[1];
-        gameTimer.setInterval(gameSpeed);
-        sendAcknowledge();
+        gameSpeed = getGameSpeed(game);
+        gameTimer.setInterval(gameSpeed);        
+        // Отправить программе актуальное состояние параметров эффектов (6 - страница "Игры")
+        sendPageParams(6);
         break;        
       case 10:
         BTcontrol = true;        
@@ -467,13 +482,16 @@ void parsing() {
         break;
       case 15: 
         if (intData[2] == 0) {
-          effectSpeed = map(constrain(intData[1],0,255),0,255,D_EFFECT_SPEED_MIN,D_EFFECT_SPEED_MAX); 
+          effectSpeed = intData[1]; 
+          saveEffectSpeed(effect, effectSpeed);
           effectTimer.setInterval(effectSpeed);
         } else if (intData[2] == 1) {
-          scrollSpeed = map(constrain(intData[1],0,255),0,255,D_TEXT_SPEED_MIN,D_TEXT_SPEED_MAX); 
+          scrollSpeed = intData[1]; 
           scrollTimer.setInterval(scrollSpeed);
+          saveTextSpeed(scrollSpeed);
         } else if (intData[2] == 2) {
-          gameSpeed = map(constrain(intData[1],0,255),0,255,D_GAME_SPEED_MIN,D_GAME_SPEED_MAX);      // для игр скорость нужна меньше!
+          gameSpeed = map(constrain(intData[1],0,255),0,255,D_GAME_SPEED_MIN,D_GAME_SPEED_MAX);      // для игр скорость нужна меньше! вх 0..255 преобразовать в 25..375
+          saveGameSpeed(game, gameSpeed);
           gameTimer.setInterval(gameSpeed);
         }
         sendAcknowledge();
@@ -506,84 +524,23 @@ void parsing() {
         sendAcknowledge();
         break;
       case 18: 
-        // W:число    ширина матрицы
-        // H:число    высота матрицы
-        // DM:Х       демо режим, где Х = 0 - выкл (ручное управление); 1 - вкл
-        // AP:Х       автосменарежимов, где Х = 0 - выкл; 1 - вкл
-        // PD:число   продолжительность режима в секундах
-        // BR:число   яркость
-        // CL:HHHHHH  текущий цвет рисования, HEX
-        // TX:[текст] текст, ограничители [] обязательны
-        // TS:Х       состояние бегущей строки, где Х = 0 - выкл; 1 - вкл
-        // ST:число   скорость прокрутки текста
-        // EF:число   текущий эффект
-        // ES:Х       состояние эффектов, где Х = 0 - выкл; 1 - вкл
-        // SE:число   скорость эффектов
-        // GM:число   текущая игра
-        // GS:Х       состояние игры, где Х = 0 - выкл; 1 - вкл
-        // SG:число   скорость игры
-        str = "";
-        switch (intData[1]) { 
-          case 0:  // Проверка связи          
-            sendAcknowledge();
-            break;
-          case 1:  // Настройки. Вернуть: Ширина/Высота матрицы; Яркость; Деморежм и Автосмена; Время смены режимо
-            str="$18 W:"+String(WIDTH)+";H:"+String(HEIGHT)+";DM:";
-            if (BTcontrol) str+="0;AP:"; else str+="1;AP:";
-            if (AUTOPLAY)  str+="1;BR:"; else str+="0;BR:";
-            str+=String(globalBrightness) + ";PD:" + String(autoplayTime / 1000) + ";";
-            break;
-          case 2:  // Рисование. Вернуть: Яркость; Цвет точки;
-            color = ("000000" + String(globalColor, HEX));
-            color = color.substring(color.length() - 6); // FFFFFF             
-            str="$18 BR:"+String(globalBrightness) + ";CL:" + color + ";";
-            break;
-          case 3:  // Картинка. Вернуть: Яркость;
-            str="$18 BR:"+String(globalBrightness) + ";";
-            break;
-          case 4:  // Текст. Вернуть: Яркость; Скорость текста; Вкл/Выкл; Текст
-            text = runningText;
-            text.replace(";","~");
-            str="$18 BR:"+String(globalBrightness) + ";ST:" + String(constrain(map(scrollSpeed, D_TEXT_SPEED_MIN,D_TEXT_SPEED_MAX, 0, 255), 0,255)) + ";ST:";
-            if (runningFlag)  str+="1;TX:["; else str+="0;TX:[";
-            str += text + "]" + ";";
-            break;
-          case 5:  // Эффекты. Вернуть: Номер эффекта, Остановлен или играет; Яркость; Скорость эффекта 
-            str="$18 EF:"+String(effect+1) + ";ES:";
-            if (effectsFlag)  str+="1;BR:"; else str+="0;BR:";
-            str+=String(globalBrightness) + ";SE:" + String(constrain(map(effectSpeed, D_EFFECT_SPEED_MIN,D_EFFECT_SPEED_MAX, 0, 255), 0,255)) + ";";
-            break;
-          case 6:  // Игры. Вернуть: Номер игры; Вкл.выкл; Яркость; Скорость игры
-            str="$18 GM:"+String(game+1) + ";GS:";
-            if (gameFlag && !gamePaused)  str+="1;BR:"; else str+="0;BR:";
-            str+=String(globalBrightness) + ";SG:" + String(constrain(map(gameSpeed, D_GAME_SPEED_MIN,D_GAME_SPEED_MAX, 0, 255), 0,255)) + ";"; 
-            break;
-          case 7:  // Настройки часов. Вернуть:
-            Serial.println("Настройки часов");
-            break;
-        }
-        
-        if (str.length() > 0) {
-          str += "\r\n";
-          // Отправить клиенту запрошенные параметры страницы / режимов
-#if (BT_MODE == 1)
-          // После отправки команды из Андроид-программы, она ждет подтверждения получения - ответ "ack;"
-          Serial.println(str);
-#endif
-#if (WIFI_MODE == 1)
-          str.toCharArray(incomeBuffer, str.length()+1);    
-          udp.beginPacket(udp.remoteIP(), udp.remotePort());
-          udp.write(incomeBuffer);
-          udp.endPacket();
-          delay(0);
-#endif
-          // Для режимов $18 кроме 0 - Acknowledge не отправляется, вместо этогоотправляется ответная посылка
-          // Поэтому флаги откуда получена команда сбрасываем здесь. Для других команд - сбрасываются в sendAcknowledge()
-          fromWiFi = false;
-          fromBT = false;
-        }
-        else
+        if (intData[1] == 0)  // ping
           sendAcknowledge();
+        else {                // запрос параметров страницы приложения
+          sendPageParams(intData[1]);
+          saveSettings();
+        }
+        break;
+      case 19: 
+        switch (intData[1]) {
+           case 0:               // $19 0 N X; - сохранить настройку X "Часы в эффекте" для эффекта N
+             saveEffectClock(intData[2], intData[3] == 1);
+             break;
+           case 1:               // $19 1 X; - сохранить настройку X "Часы в эффектах"
+             saveClockOverlayEnabled(intData[2] == 1);
+             break;
+        }
+        sendAcknowledge();
         break;
     }
     lastMode = intData[0];  // запомнить предыдущий режим
@@ -631,13 +588,16 @@ void parsing() {
           Serial.print("Содержимое: ");
           Serial.println(incomeBuffer);
         }
-      }
 #endif
+      }
+
+#if (USE_CLOCK == 1)
       // NTP packet from time server
       if (udp.remotePort() == 123) {
         parseNTP();
         haveIncomeData = 0;
       }
+#endif      
     }
 
     if (haveIncomeData) {         
@@ -738,6 +698,86 @@ void parsing() {
   }
 }
 
+void sendPageParams(int page) {
+  // W:число    ширина матрицы
+  // H:число    высота матрицы
+  // DM:Х       демо режим, где Х = 0 - выкл (ручное управление); 1 - вкл
+  // AP:Х       автосменарежимов, где Х = 0 - выкл; 1 - вкл
+  // PD:число   продолжительность режима в секундах
+  // BR:число   яркость
+  // CL:HHHHHH  текущий цвет рисования, HEX
+  // TX:[текст] текст, ограничители [] обязательны
+  // TS:Х       состояние бегущей строки, где Х = 0 - выкл; 1 - вкл
+  // ST:число   скорость прокрутки текста
+  // EF:число   текущий эффект
+  // ES:Х       состояние эффектов, где Х = 0 - выкл; 1 - вкл
+  // EC:X       оверлей часов для эффекта вкл/выкл, где Х = 0 - выкл; 1 - вкл
+  // SE:число   скорость эффектов
+  // GM:число   текущая игра
+  // GS:Х       состояние игры, где Х = 0 - выкл; 1 - вкл
+  // SG:число   скорость игры
+  // CE:X       оверлей часов вкл/выкл, где Х = 0 - выкл; 1 - вкл
+  String str = "", color, text;
+  switch (page) { 
+    case 1:  // Настройки. Вернуть: Ширина/Высота матрицы; Яркость; Деморежм и Автосмена; Время смены режимо
+      str="$18 W:"+String(WIDTH)+";H:"+String(HEIGHT)+";DM:";
+      if (BTcontrol) str+="0;AP:"; else str+="1;AP:";
+      if (AUTOPLAY)  str+="1;BR:"; else str+="0;BR:";
+      str+=String(globalBrightness) + ";PD:" + String(autoplayTime / 1000) + ";";
+      break;
+    case 2:  // Рисование. Вернуть: Яркость; Цвет точки;
+      color = ("000000" + String(globalColor, HEX));
+      color = color.substring(color.length() - 6); // FFFFFF             
+      str="$18 BR:"+String(globalBrightness) + ";CL:" + color + ";";
+      break;
+    case 3:  // Картинка. Вернуть: Яркость;
+      str="$18 BR:"+String(globalBrightness) + ";";
+      break;
+    case 4:  // Текст. Вернуть: Яркость; Скорость текста; Вкл/Выкл; Текст
+      text = runningText;
+      text.replace(";","~");
+      str="$18 BR:"+String(globalBrightness) + ";ST:" + String(constrain(map(scrollSpeed, D_TEXT_SPEED_MIN,D_TEXT_SPEED_MAX, 0, 255), 0,255)) + ";ST:";
+      if (runningFlag)  str+="1;TX:["; else str+="0;TX:[";
+      str += text + "]" + ";";
+      break;
+    case 5:  // Эффекты. Вернуть: Номер эффекта, Остановлен или играет; Яркость; Скорость эффекта? Оверлей часовв 
+      str="$18 EF:"+String(effect+1) + ";ES:";
+      if (effectsFlag)  str+="1;BR:"; else str+="0;BR:";
+      str+=String(globalBrightness) + ";SE:" + String(constrain(map(effectSpeed, D_EFFECT_SPEED_MIN,D_EFFECT_SPEED_MAX, 0, 255), 0,255));
+      if (isColorEffect(effect) || effect == MC_CLOCK) 
+          str+=";EC:X;";  // X - параметр не используется (неприменим)
+      else    
+          str+=";EC:" + String(getEffectClock(effect)) + ";";
+      break;
+    case 6:  // Игры. Вернуть: Номер игры; Вкл.выкл; Яркость; Скорость игры
+      str="$18 GM:"+String(game+1) + ";GS:";
+      if (gameFlag && !gamePaused)  str+="1;BR:"; else str+="0;BR:";
+      str+=String(globalBrightness) + ";SG:" + String(constrain(map(gameSpeed, D_GAME_SPEED_MIN,D_GAME_SPEED_MAX, 0, 255), 0,255)) + ";"; 
+      break;
+    case 7:  // Настройки часов. Вернуть: Оверлей вкл/выкл
+      str="$18 CE:"+String(getClockOverlayEnabled()) + ";";
+      break;
+  }
+  
+  if (str.length() > 0) {
+    str += "\r\n";
+    // Отправить клиенту запрошенные параметры страницы / режимов
+#if (BT_MODE == 1)
+    // После отправки команды из Андроид-программы, она ждет подтверждения получения - ответ "ack;"
+    Serial.println(str);
+#endif
+#if (WIFI_MODE == 1)
+    str.toCharArray(incomeBuffer, str.length()+1);    
+    udp.beginPacket(udp.remoteIP(), udp.remotePort());
+    udp.write(incomeBuffer);
+    udp.endPacket();
+    delay(0);
+#endif
+  } else {
+    sendAcknowledge();
+  }
+}
+
 void sendAcknowledge() {
 #if (BT_MODE == 1)
   // После отправки команды из Андроид-программы, она ждет подтверждения получения - ответ "ack;"
@@ -786,6 +826,6 @@ bool isColorEffect(byte effect) {
 
 #else
 void bluetoothRoutine() {
-  return;
+  customRoutine();
 }
 #endif

@@ -20,7 +20,6 @@
 
 // эффекты, в которых отображаются часы в наложении
 byte overlayList[] = {
-  MC_GAME,
   MC_NOISE_MADNESS,
   MC_NOISE_CLOUD,
   MC_NOISE_LAVA,
@@ -42,7 +41,7 @@ byte overlayList[] = {
 };
 
 // ****************** ДЛЯ РАЗРАБОТЧИКОВ ****************
-bool overlayEnabled = true;
+bool overlayEnabled = getClockOverlayEnabled();
 byte listSize = sizeof(overlayList);
 CRGB contrastColor = CONTRAST_COLOR;
 byte clockHue;
@@ -56,7 +55,7 @@ CRGB overlayLEDs[70];
 #if (USE_CLOCK == 1)
 CRGB clockLED[5] = {HOUR_COLOR, HOUR_COLOR, DOT_COLOR, MIN_COLOR, MIN_COLOR};
 
-#if (MCU_TYPE == 1)
+#if (WIFI_MODE == 1 && USE_CLOCK == 1)
 // send an NTP request to the time server at the given address
 unsigned long sendNTPpacket(IPAddress& address) {
 #if (BT_MODE == 0)  
@@ -120,19 +119,41 @@ void getNTP() {
 #endif
 
 boolean overlayAllowed() {
-  for (byte i = 0; i < listSize; i++)
-    if (modeCode == overlayList[i]) return true;
-  return false;
+  // Оверлей разрешен общими настройками часов?
+  bool allowed = getClockOverlayEnabled();
+  // Оверлей разрешен настройками списка разрешенных для оверлея эффектов?
+  if (allowed) {
+    for (byte i = 0; i < listSize; i++) {
+      allowed = (modeCode == overlayList[i]);
+      if (allowed) break;
+    }
+  }
+
+#if (BT_MODE == 1 || WIFI_MODE == 1)  
+
+  // Эффекты Дыхание, Цвета, Радуга пикс. и Часы, a также функция isColorEffect() есть только при включенных опциях BT_MODE или WIFI_MODE
+  // Оверлей разрешен настройками параметров эффекта? (в эффектах Дыхание, Цвета, Радуга пикс. и Часы оверлей часов не разрешен)
+  if (allowed && BTcontrol && effectsFlag && !(isColorEffect(effect) || effect == MC_CLOCK)) {
+    allowed = getEffectClock(effect);   
+  }
+  
+#endif
+  
+  // Если в режиме авто - найти соответствие номера отображаемого режима номеру эффекта и проверить - разрешен ли для него оверлей часов
+  if (allowed && !BTcontrol) {
+    byte tmp_effect = mapModeToEffect(thisMode);
+    if (tmp_effect <= MAX_EFFECT) 
+      allowed = getEffectClock(tmp_effect);   
+  }
+  return allowed;
 }
 
 String clockCurrentText() {
 
 #if (USE_RTC == 1 && (MCU_TYPE == 0 || MCU_TYPE == 1))
     DateTime now = rtc.now();
-    time_t t = now;
-    setTime(t);
-    mins = now.minute();
     hrs = now.hour();
+    mins = now.minute();
 #else if (MCU_TYPE == 1) 
     hrs = hour();
     mins = minute();

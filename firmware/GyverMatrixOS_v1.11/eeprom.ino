@@ -1,11 +1,7 @@
-#include <EEPROM.h>
+#if (USE_EEPROM == 1)
 #define EEPROM_OK 0xA5        // Флаг, показывающий, что EEPROM инициализирована корректными данными 
-#define MAX_EFFECT 22         // количество эффектов, определенных в прошивке
-#define MAX_GAME 6            // количество игр, определенных в прошивке
 #define EFFECT_EEPROM 20      // начальная ячейка eeprom с параметрами эффектов
 #define GAME_EEPROM 100       // начальная ячейка eeprom с параметрами игр
-
-bool eepromModified = false;
 
 void loadSettings() {
 
@@ -15,7 +11,8 @@ void loadSettings() {
   //   2 - скорость прокрутки текста по умолчанию
   //   3 - скорость эффектов по умолчанию
   //   4 - скорость игр по умолчанию
-  //   5 - зарезервировано
+  //   5 - разрешен оверлей часов для эффектов
+  //   6 - зарезервировано
   // ... - зарезервировано
   //  19 - зарезервировано
   //  20 - 20+(Nэфф*2)   - скорость эффекта
@@ -31,12 +28,14 @@ void loadSettings() {
     globalBrightness = EEPROM.read(1);
     scrollSpeed = map(EEPROM.read(2),0,255,D_TEXT_SPEED_MIN,D_TEXT_SPEED_MAX);
     effectSpeed = map(EEPROM.read(3),0,255,D_EFFECT_SPEED_MIN,D_EFFECT_SPEED_MAX);
-    gameSpeed =   map(EEPROM.read(4),0,255,D_GAME_SPEED_MIN,D_GAME_SPEED_MAX);        
+    gameSpeed = map(EEPROM.read(4),0,255,D_GAME_SPEED_MIN,D_GAME_SPEED_MAX);   
+    overlayEnabled = EEPROM.read(5);
   } else {
     globalBrightness = BRIGHTNESS;
     scrollSpeed = D_TEXT_SPEED;
     effectSpeed = D_EFFECT_SPEED;
     gameSpeed = D_GAME_SPEED;
+    overlayEnabled = true;
   }
 
   scrollTimer.setInterval(scrollSpeed);
@@ -63,10 +62,14 @@ void saveDefaults() {
   for (int i = 0; i < MAX_GAME; i++) {
     saveGameParams(i, gameSpeed);
   }
+  
+  eepromModified = true;
 }
 
 void saveSettings() {
 
+  if (!eepromModified) return;
+  
   // Поставить отметку, что EEPROM инициализировано параметрами эффектов
   EEPROM.write(0, EEPROM_OK);
   EEPROM.write(1, globalBrightness);
@@ -74,14 +77,35 @@ void saveSettings() {
   EEPROM.write(2, constrain(map(scrollSpeed, D_TEXT_SPEED_MIN, D_TEXT_SPEED_MAX, 0, 255), 0, 255));
   EEPROM.write(3, constrain(map(effectSpeed, D_EFFECT_SPEED_MIN, D_EFFECT_SPEED_MAX, 0, 255), 0, 255));
   EEPROM.write(4, constrain(map(gameSpeed, D_GAME_SPEED_MIN, D_GAME_SPEED_MAX, 0, 255), 0, 255));
-  
+
+  EEPROM.write(5, overlayEnabled);
+
   EEPROM.commit();
+
+#if (BT_MODE == 0)
+  Serial.println("Настройки сохранены в EEPROM");
+#endif
+  
+  eepromModified = false;
 }
 
 void saveEffectParams(byte effect, int speed, boolean overlay) {
   const int addr = EFFECT_EEPROM;  
   EEPROM.write(addr + effect*2, constrain(map(speed, D_EFFECT_SPEED_MIN, D_EFFECT_SPEED_MAX, 0, 255), 0, 255));        // Скорость эффекта
   EEPROM.write(addr + effect*2 + 1, overlay ? 1 : 0);             // По умолчанию оверлей часов для эффекта отключен  
+  eepromModified = true;
+}
+
+void saveEffectSpeed(byte effect, int speed) {
+  const int addr = EFFECT_EEPROM;  
+  EEPROM.write(addr + effect*2, constrain(map(speed, D_EFFECT_SPEED_MIN, D_EFFECT_SPEED_MAX, 0, 255), 0, 255));        // Скорость эффекта
+  eepromModified = true;
+}
+
+void saveEffectClock(byte effect, boolean overlay) {
+  const int addr = EFFECT_EEPROM;  
+  EEPROM.write(addr + effect*2 + 1, overlay ? 1 : 0);             // По умолчанию оверлей часов для эффекта отключен  
+  eepromModified = true;
 }
 
 int getEffectSpeed(byte effect) {
@@ -98,9 +122,59 @@ void saveGameParams(byte game, int speed) {
   const int addr = GAME_EEPROM;  
   EEPROM.write(addr + game*2, constrain(map(speed, D_GAME_SPEED_MIN, D_GAME_SPEED_MAX, 0, 255), 0, 255));         // Скорость эффекта
   EEPROM.write(addr + game*2 + 1, 0);         // Зарезервироано
+  eepromModified = true;
+}
+
+void saveGameSpeed(byte game, int speed) {
+  const int addr = GAME_EEPROM;  
+  EEPROM.write(addr + game*2, constrain(map(speed, D_GAME_SPEED_MIN, D_GAME_SPEED_MAX, 0, 255), 0, 255));         // Скорость эффекта
+  eepromModified = true;
 }
 
 int getGameSpeed(byte game) {
   const int addr = GAME_EEPROM;  
   return map(EEPROM.read(addr + game*2),0,255,D_GAME_SPEED_MIN,D_GAME_SPEED_MAX);
 }
+
+boolean getClockOverlayEnabled() {
+  const int addr = EFFECT_EEPROM;
+  return EEPROM.read(5) == 1;
+}
+
+void saveClockOverlayEnabled(boolean enabled) {
+  EEPROM.write(5, overlayEnabled);
+  eepromModified = true;
+}
+
+void saveTextSpeed(int speed) {
+  EEPROM.write(2, constrain(map(speed, D_TEXT_SPEED_MIN, D_TEXT_SPEED_MAX, 0, 255), 0, 255));
+  eepromModified = true;
+}
+
+int getScrollSpeed() {
+  return map(EEPROM.read(2),0,255,D_TEXT_SPEED_MIN,D_TEXT_SPEED_MAX);
+}
+
+void saveBrightness(byte brightness) {
+  EEPROM.write(1, globalBrightness);
+}
+
+#else
+
+void loadSettings() { }
+void saveSettings() { eepromModified = false; }
+void saveEffectParams(byte effect, int speed, boolean overlay) { }
+void saveEffectSpeed(byte effect, int speed) { }
+void saveEffectClock(byte effect, boolean overlay) { }
+int getEffectSpeed(byte effect) { return effectSpeed; }
+boolean getEffectClock(byte effect) { return overlayAllowed(); }
+void saveGameParams(byte game, int speed) { }
+void saveGameSpeed(byte game, int speed) { }
+int getGameSpeed(byte game) { return gameSpeed; }
+boolean getClockOverlayEnabled() { return overlayEnabled; }
+void saveClockOverlayEnabled(boolean enabled) { }
+void saveTextSpeed(int speed) { }
+int getScrollSpeed() { return scrollSpeed; }
+void saveBrightness(byte brightness) {}
+
+#endif

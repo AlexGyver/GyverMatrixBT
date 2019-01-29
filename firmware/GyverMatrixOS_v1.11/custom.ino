@@ -57,15 +57,6 @@
 // case <номер>: <эффект>;
 //  break;
 
-// не забудьте указать количество режимов для корректного переключения с последнего на первый
-
-// количество кастомных режимов (которые переключаются сами или кнопкой)
-#if (USE_ANIMATION == 1 && WIDTH == 16 && HEIGHT == 16)
-#define MODES_AMOUNT 29   
-#else
-#define MODES_AMOUNT 28
-#endif
-
 void customModes() {
   switch (thisMode) {    
     case 0: 
@@ -137,6 +128,86 @@ void customModes() {
   }
 }
 
+byte mapModeToEffect(byte aMode) {
+  byte tmp_effect = 255;
+  // Если режима нет в списке - ему нет соответствия среди эффектов - значит это игра или бегущий текст
+  switch (aMode) {
+    case 3:  tmp_effect = 13; break;       // madnessNoise();
+    case 4:  tmp_effect = 14; break;       // cloudNoise();
+    case 5:  tmp_effect = 15; break;       // lavaNoise();
+    case 6:  tmp_effect = 16; break;       // plasmaNoise();
+    case 7:  tmp_effect = 17; break;       // rainbowNoise();
+    case 8:  tmp_effect = 18; break;       // rainbowStripeNoise();
+    case 9:  tmp_effect = 19; break;       // zebraNoise();
+    case 10: tmp_effect = 20; break;       // forestNoise();
+    case 11: tmp_effect = 21; break;       // oceanNoise();
+    case 12: tmp_effect = 2;  break;       // snowRoutine();
+    case 13: tmp_effect = 11; break;       // sparklesRoutine()
+    case 14: tmp_effect = 7;  break;       // matrixRoutine();
+    case 15: tmp_effect = 10; break;       // starfallRoutine()
+    case 16: tmp_effect = 3;  break;       // ballRoutine();
+    case 17: tmp_effect = 8;  break;       // ballsRoutine();
+    case 18: tmp_effect = 4;  break;       // rainbowRoutine();
+    case 19: tmp_effect = 12; break;       // rainbowDiagonalRoutine();
+    case 20: tmp_effect = 6;  break;       // fireRoutine()
+    case 28: tmp_effect = 22; break;       // animation();
+
+    case 0:  break;  // Бегущий текст
+    case 1:  break;  // Бегущий текст
+    case 2:  break;  // Бегущий текст
+
+    case 21: break;  // snakeRoutine(); 
+    case 22: break;  // tetrisRoutine();
+    case 23: break;  // mazeRoutine();
+    case 24: break;  // runnerRoutine();
+    case 25: break;  // flappyRoutine();
+    case 26: break;  // arkanoidRoutine();
+    
+    case 27: break;  // clockRoutine();     
+  }
+  return tmp_effect;
+}
+
+byte mapModeToGame(byte aMode) {
+  byte tmp_game = 255;
+  // Если режима нет в списке - ему нет соответствия среди тгр - значит это эффект или бегущий текст
+  switch (aMode) {
+    case 3:  break;  // madnessNoise();
+    case 4:  break;  // cloudNoise();
+    case 5:  break;  // lavaNoise();
+    case 6:  break;  // plasmaNoise();
+    case 7:  break;  // rainbowNoise();
+    case 8:  break;  // rainbowStripeNoise();
+    case 9:  break;  // zebraNoise();
+    case 10: break;  // forestNoise();
+    case 11: break;  // oceanNoise();
+    case 12: break;  // snowRoutine();
+    case 13: break;  // sparklesRoutine()
+    case 14: break;  // matrixRoutine();
+    case 15: break;  // starfallRoutine()
+    case 16: break;  // ballRoutine();
+    case 17: break;  // ballsRoutine();
+    case 18: break;  // rainbowRoutine();
+    case 19: break;  // rainbowDiagonalRoutine();
+    case 20: break;  // fireRoutine()
+    case 28: break;  // animation();
+
+    case 0:  break;  // Бегущий текст
+    case 1:  break;  // Бегущий текст
+    case 2:  break;  // Бегущий текст
+
+    case 21: tmp_game = 0; break;  // snakeRoutine(); 
+    case 22: tmp_game = 1; break;  // tetrisRoutine();
+    case 23: tmp_game = 2; break;  // mazeRoutine();
+    case 24: tmp_game = 3; break;  // runnerRoutine();
+    case 25: tmp_game = 4; break;  // flappyRoutine();
+    case 26: tmp_game = 5; break;  // arkanoidRoutine();
+    
+    case 27: break;  // clockRoutine();     
+  }
+  return tmp_game;
+}
+
 // ********************* ОСНОВНОЙ ЦИКЛ РЕЖИМОВ *******************
 #if (SMOOTH_CHANGE == 1)
 byte fadeMode = 4;
@@ -167,6 +238,7 @@ void nextModeHandler() {
   loadingFlag = true;
   gamemodeFlag = false;
   autoplayTimer = millis();
+  setTimersForMode(thisMode);
   FastLED.clear();
   FastLED.show();
 }
@@ -177,8 +249,29 @@ void prevModeHandler() {
   loadingFlag = true;
   gamemodeFlag = false;
   autoplayTimer = millis();
+  setTimersForMode(thisMode);
   FastLED.clear();
   FastLED.show();
+}
+
+void setTimersForMode(byte aMode) {
+  if (aMode >= 0 && aMode < 3) {
+    // Это бегущий текст  
+    scrollSpeed = getScrollSpeed();
+    scrollTimer.setInterval(scrollSpeed);
+  } else {
+    byte tmp_effect = mapModeToEffect(aMode);
+    if (tmp_effect != 255) {
+      effectSpeed = getEffectSpeed(tmp_effect);
+      effectTimer.setInterval(effectSpeed);
+    } else {
+      byte tmp_game = mapModeToGame(aMode);
+      if (tmp_effect != 255) {
+        gameSpeed = DEMO_GAME_SPEED;
+        gameTimer.setInterval(gameSpeed);
+      }
+    }
+  }
 }
 
 int fadeBrightness;
@@ -217,16 +310,16 @@ void modeFader() {
 }
 #endif
 
-boolean loadFlag2;
-
 void customRoutine() {
    
   if (!gamemodeFlag) {
     if (effectTimer.isReady()) {
       
 #if (OVERLAY_CLOCK == 1 && USE_CLOCK == 1)
-      if (overlayEnabled && overlayAllowed()) {
-        if (!loadingFlag && !gamemodeFlag && needUnwrap() && modeCode != MC_TEXT) clockOverlayUnwrap(CLOCK_X, CLOCK_Y);
+      boolean loadFlag2;
+      boolean needOverlay = modeCode != MC_TEXT && overlayAllowed();
+      if (needOverlay) {
+        if (!loadingFlag && needUnwrap()) clockOverlayUnwrap(CLOCK_X, CLOCK_Y);
         if (loadingFlag) loadFlag2 = true;
       }
 #endif
@@ -234,8 +327,8 @@ void customRoutine() {
       customModes();                // режимы крутятся, пиксели мутятся
 
 #if (OVERLAY_CLOCK == 1 && USE_CLOCK == 1)
-      if (overlayEnabled && overlayAllowed()) {
-        if (!gamemodeFlag && modeCode != MC_TEXT) clockOverlayWrap(CLOCK_X, CLOCK_Y);
+      if (needOverlay) {
+        clockOverlayWrap(CLOCK_X, CLOCK_Y);
         if (loadFlag2) {
           setOverlayColors();
           loadFlag2 = false;
@@ -295,11 +388,12 @@ void checkIdleState() {
   }  
 }
 
-#if (MCU_TYPE == 1)
-void weatherRequest() {
-  if (init_time == 0) {
-    return;
-  }
+#if (USE_WEATHER == 1)
+void weatherRequest() {  
+  #if (USE_CLOCK == 1)
+    if (init_time == 0) return;
+  #endif
+  
   Serial.println("Weather request...");
   client.stop();
   
@@ -485,18 +579,21 @@ void btnsModeChange() {
     if (bt_right.holding())
       if (changeTimer.isReady()) {
         if (!clockSet) {
-          if (scrollFlag) {
+          if (runningFlag) {
             scrollSpeed -= 2;
             if (scrollSpeed < D_TEXT_SPEED_MIN) scrollSpeed = D_TEXT_SPEED_MIN;
+            saveTextSpeed(scrollSpeed);
             scrollTimer.setInterval(scrollSpeed);
-          } else if (effectFlag) {
+          } else if (effectsFlag) {
             effectSpeed -= 2;
             if (effectSpeed < D_EFFECT_SPEED_MIN) effectSpeed = D_EFFECT_SPEED_MIN;
+            saveEffectSpeed(effect, effectSpeed);
             effectTimer.setInterval(effectSpeed);
           } else if (gameFlag) {
             gameSpeed -= 2;
             if (gameSpeed < D_GAME_SPEED_MIN) gameSpeed = D_GAME_SPEED_MIN;
-            ganeTimer.setInterval(gameSpeed);
+            saveGameSpeed(game, gameSpeed);
+            gameTimer.setInterval(gameSpeed);
           }
         } else {
 #if (MCU_TYPE == 1)
@@ -509,17 +606,20 @@ void btnsModeChange() {
     if (bt_left.holding())
       if (changeTimer.isReady()) {
         if (!clockSet) {
-          if (scrollFlag) {
+          if (runningFlag) {
             scrollSpeed += 2;
             if (scrollSpeed > D_TEXT_SPEED_MAX) scrollSpeed = D_TEXT_SPEED_MAX;
+            saveTextSpeed(scrollSpeed);
             scrollTimer.setInterval(scrollSpeed);
-          } else if (effectFlag) {
+          } else if (effectsFlag) {
             effectSpeed += 2;
             if (effectSpeed > D_EFFECT_SPEED_MAX) effectSpeed = D_EFFECT_SPEED_MAX;
+            saveEffectSpeed(effect, effectSpeed);
             effectTimer.setInterval(effectSpeed);
           } else if (gameFlag) {
             gameSpeed += 2;
             if (gameSpeed > D_GAME_SPEED_MAX) gameSpeed = D_GAME_SPEED_MAX;
+            saveGameSpeed(game, gameSpeed);
             gameTimer.setInterval(gameSpeed);
           }
         } else {
@@ -535,7 +635,7 @@ void btnsModeChange() {
         if (!clockSet) {
           globalBrightness += 2;
           if (globalBrightness > 255) globalBrightness = 255;
-          fadeBrightness = globalBrightness;
+          saveBrightness(globalBrightness);
           FastLED.setBrightness(globalBrightness);
         } else {
 #if (MCU_TYPE == 1)
@@ -550,7 +650,7 @@ void btnsModeChange() {
         if (!clockSet) {
           globalBrightness -= 2;
           if (globalBrightness < 0) globalBrightness = 0;
-          fadeBrightness = globalBrightness;
+          saveBrightness(globalBrightness);
           FastLED.setBrightness(globalBrightness);
         } else {
 #if (MCU_TYPE == 1)

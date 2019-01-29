@@ -296,7 +296,7 @@ void parsing() {
       case 4:
         globalBrightness = intData[1];
         breathBrightness = globalBrightness;
-        saveBrightness(globalBrightness);
+        saveMaxBrightness(globalBrightness);
         FastLED.setBrightness(globalBrightness);
         FastLED.show();
         sendAcknowledge();
@@ -488,7 +488,7 @@ void parsing() {
         } else if (intData[2] == 1) {
           scrollSpeed = intData[1]; 
           scrollTimer.setInterval(scrollSpeed);
-          saveTextSpeed(scrollSpeed);
+          saveScrollSpeed(scrollSpeed);
         } else if (intData[2] == 2) {
           gameSpeed = map(constrain(intData[1],0,255),0,255,D_GAME_SPEED_MIN,D_GAME_SPEED_MAX);      // для игр скорость нужна меньше! вх 0..255 преобразовать в 25..375
           saveGameSpeed(game, gameSpeed);
@@ -497,7 +497,7 @@ void parsing() {
         sendAcknowledge();
         break;
       case 16:
-        BTcontrol = intData[1] == 1;
+        BTcontrol = intData[1] == 1;                
         if (intData[1] == 0) AUTOPLAY = true;
         else if (intData[1] == 1) AUTOPLAY = false;
         else if (intData[1] == 2) prevMode();
@@ -508,6 +508,7 @@ void parsing() {
         if (AUTOPLAY) {
           autoplayTimer = millis(); // При включении автоматического режима сбросить таймер автосмены режимов
         }
+        saveAutoplay(AUTOPLAY);
 
         // Если при переключении в ручной режим был демонстрационный режим бегущей строки - включить ручной режим бегщей строки
         if (intData[1] == 0 || (intData[1] == 1 && thisMode < 3)) {

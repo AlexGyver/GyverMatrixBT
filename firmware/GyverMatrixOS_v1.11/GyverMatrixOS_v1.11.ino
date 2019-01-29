@@ -5,7 +5,7 @@
 // Исходники на GitHub: https://github.com/AlexGyver/GyverMatrixBT/
 // Нравится, как написан код? Поддержи автора! https://alexgyver.ru/support_alex/
 // Автор: AlexGyver Technologies, 2018
-// https://AlexGyver.ru/
+// https://AlexGyAver.ru/
 
 // GyverMatrixOS
 // Версия прошивки 1.12, совместима с приложением GyverMatrixBT версии 1.13 и выше

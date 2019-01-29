@@ -582,7 +582,7 @@ void btnsModeChange() {
           if (runningFlag) {
             scrollSpeed -= 2;
             if (scrollSpeed < D_TEXT_SPEED_MIN) scrollSpeed = D_TEXT_SPEED_MIN;
-            saveTextSpeed(scrollSpeed);
+            saveScrollSpeed(scrollSpeed);
             scrollTimer.setInterval(scrollSpeed);
           } else if (effectsFlag) {
             effectSpeed -= 2;
@@ -609,7 +609,7 @@ void btnsModeChange() {
           if (runningFlag) {
             scrollSpeed += 2;
             if (scrollSpeed > D_TEXT_SPEED_MAX) scrollSpeed = D_TEXT_SPEED_MAX;
-            saveTextSpeed(scrollSpeed);
+            saveScrollSpeed(scrollSpeed);
             scrollTimer.setInterval(scrollSpeed);
           } else if (effectsFlag) {
             effectSpeed += 2;
@@ -635,7 +635,7 @@ void btnsModeChange() {
         if (!clockSet) {
           globalBrightness += 2;
           if (globalBrightness > 255) globalBrightness = 255;
-          saveBrightness(globalBrightness);
+          saveMaxBrightness(globalBrightness);
           FastLED.setBrightness(globalBrightness);
         } else {
 #if (MCU_TYPE == 1)
@@ -650,7 +650,7 @@ void btnsModeChange() {
         if (!clockSet) {
           globalBrightness -= 2;
           if (globalBrightness < 0) globalBrightness = 0;
-          saveBrightness(globalBrightness);
+          saveMaxBrightness(globalBrightness);
           FastLED.setBrightness(globalBrightness);
         } else {
 #if (MCU_TYPE == 1)

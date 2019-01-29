@@ -12,7 +12,8 @@ void loadSettings() {
   //   3 - скорость эффектов по умолчанию
   //   4 - скорость игр по умолчанию
   //   5 - разрешен оверлей часов для эффектов
-  //   6 - зарезервировано
+  //   6 - автосмена режима в демо: вкл/выкл
+  //   7 - зарезервировано
   // ... - зарезервировано
   //  19 - зарезервировано
   //  20 - 20+(Nэфф*2)   - скорость эффекта
@@ -30,12 +31,14 @@ void loadSettings() {
     effectSpeed = map(EEPROM.read(3),0,255,D_EFFECT_SPEED_MIN,D_EFFECT_SPEED_MAX);
     gameSpeed = map(EEPROM.read(4),0,255,D_GAME_SPEED_MIN,D_GAME_SPEED_MAX);   
     overlayEnabled = EEPROM.read(5);
+    AUTOPLAY = EEPROM.read(6) == 1;
   } else {
     globalBrightness = BRIGHTNESS;
     scrollSpeed = D_TEXT_SPEED;
     effectSpeed = D_EFFECT_SPEED;
     gameSpeed = D_GAME_SPEED;
     overlayEnabled = true;
+    AUTOPLAY = true;
   }
 
   scrollTimer.setInterval(scrollSpeed);
@@ -97,15 +100,19 @@ void saveEffectParams(byte effect, int speed, boolean overlay) {
 }
 
 void saveEffectSpeed(byte effect, int speed) {
-  const int addr = EFFECT_EEPROM;  
-  EEPROM.write(addr + effect*2, constrain(map(speed, D_EFFECT_SPEED_MIN, D_EFFECT_SPEED_MAX, 0, 255), 0, 255));        // Скорость эффекта
-  eepromModified = true;
+  if (speed != getEffectSpeed(effect)) {
+    const int addr = EFFECT_EEPROM;  
+    EEPROM.write(addr + effect*2, constrain(map(speed, D_EFFECT_SPEED_MIN, D_EFFECT_SPEED_MAX, 0, 255), 0, 255));        // Скорость эффекта
+    eepromModified = true;
+  }
 }
 
 void saveEffectClock(byte effect, boolean overlay) {
-  const int addr = EFFECT_EEPROM;  
-  EEPROM.write(addr + effect*2 + 1, overlay ? 1 : 0);             // По умолчанию оверлей часов для эффекта отключен  
-  eepromModified = true;
+  if (overlay != getEffectClock(effect)) {
+    const int addr = EFFECT_EEPROM;  
+    EEPROM.write(addr + effect*2 + 1, overlay ? 1 : 0);             // По умолчанию оверлей часов для эффекта отключен  
+    eepromModified = true;
+  }
 }
 
 int getEffectSpeed(byte effect) {
@@ -126,9 +133,11 @@ void saveGameParams(byte game, int speed) {
 }
 
 void saveGameSpeed(byte game, int speed) {
-  const int addr = GAME_EEPROM;  
-  EEPROM.write(addr + game*2, constrain(map(speed, D_GAME_SPEED_MIN, D_GAME_SPEED_MAX, 0, 255), 0, 255));         // Скорость эффекта
-  eepromModified = true;
+  if (speed != getGameSpeed(game)) {
+    const int addr = GAME_EEPROM;  
+    EEPROM.write(addr + game*2, constrain(map(speed, D_GAME_SPEED_MIN, D_GAME_SPEED_MAX, 0, 255), 0, 255));         // Скорость эффекта
+    eepromModified = true;
+  }
 }
 
 int getGameSpeed(byte game) {
@@ -142,21 +151,39 @@ boolean getClockOverlayEnabled() {
 }
 
 void saveClockOverlayEnabled(boolean enabled) {
-  EEPROM.write(5, overlayEnabled);
-  eepromModified = true;
+  if (enabled != getClockOverlayEnabled()) {
+    EEPROM.write(5, overlayEnabled);
+    eepromModified = true;
+  }
 }
 
-void saveTextSpeed(int speed) {
-  EEPROM.write(2, constrain(map(speed, D_TEXT_SPEED_MIN, D_TEXT_SPEED_MAX, 0, 255), 0, 255));
-  eepromModified = true;
+void saveScrollSpeed(int speed) {
+  if (speed != getScrollSpeed()) {
+    EEPROM.write(2, constrain(map(speed, D_TEXT_SPEED_MIN, D_TEXT_SPEED_MAX, 0, 255), 0, 255));
+    eepromModified = true;
+  }
 }
 
 int getScrollSpeed() {
   return map(EEPROM.read(2),0,255,D_TEXT_SPEED_MIN,D_TEXT_SPEED_MAX);
 }
 
-void saveBrightness(byte brightness) {
-  EEPROM.write(1, globalBrightness);
+byte getMaxBrightness() {
+  return EEPROM.read(1);
+}
+
+void saveMaxBrightness(byte brightness) {
+  if (brightness != getMaxBrightness()) {
+     EEPROM.write(1, globalBrightness);
+  }
+}
+
+void saveAutoplay(boolean value) {
+  EEPROM.write(6, value);
+}
+
+bool getAutoplay() {
+  return EEPROM.read(6) == 1;
 }
 
 #else
@@ -173,8 +200,11 @@ void saveGameSpeed(byte game, int speed) { }
 int getGameSpeed(byte game) { return gameSpeed; }
 boolean getClockOverlayEnabled() { return overlayEnabled; }
 void saveClockOverlayEnabled(boolean enabled) { }
-void saveTextSpeed(int speed) { }
+void saveScrollSpeed(int speed) { }
 int getScrollSpeed() { return scrollSpeed; }
-void saveBrightness(byte brightness) {}
+byte getMaxBrightness(byte brightness) { return globalBrightness; }
+void saveMaxBrightness(byte brightness) {}
+void saveAutoplay(boolean value) { }
+bool getAutoplay() { return AUTOPLAY; }
 
 #endif

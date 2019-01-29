@@ -173,7 +173,7 @@ void parsing() {
     14 - пауза в игре
     15 - скорость $15 скорость таймер; 0 - таймер эффектов, 1 - таймер скроллинга текста 2 - таймер игр
     16 - Режим смены эффектов: $16 value; N:  0 - Autoplay on; 1 - Autoplay off; 2 - PrevMode; 3 - NextMode
-    17 - Время автосмены эффектов: $17 сек;
+    17 - Время автосмены эффектов и бездействия: $17 сек сек;
     18 - Запрос текущих параметров программой: $18 page;  page: 1 - настройки; 2 - рисование; 3 - картинка; 4 - текст; 5 - эффекты; 6 - игра; 7 - часы; 8 - о приложении 
     19 - работа с настройками часов
   */  
@@ -490,10 +490,16 @@ void parsing() {
         break;
       case 17: 
         autoplayTime = ((long)intData[1] * 1000);
+        idleTime = ((long)intData[2] * 1000);
         saveAutoplayTime(autoplayTime);
+        saveIdleTime(autoplayTime);
         idleState = !BTcontrol && AUTOPLAY; 
         if (AUTOPLAY) {
           autoplayTimer = millis();
+        }
+        if (idleState) {
+          gameTimer.setInterval(idleTime);
+          gameTimer.reset();
         }
         sendAcknowledge();
         break;
@@ -678,6 +684,7 @@ void sendPageParams(int page) {
   // DM:Х       демо режим, где Х = 0 - выкл (ручное управление); 1 - вкл
   // AP:Х       автосменарежимов, где Х = 0 - выкл; 1 - вкл
   // PD:число   продолжительность режима в секундах
+  // IT:число   время бездействия в секундах
   // BR:число   яркость
   // CL:HHHHHH  текущий цвет рисования, HEX
   // TX:[текст] текст, ограничители [] обязательны
@@ -699,7 +706,7 @@ void sendPageParams(int page) {
       str="$18 W:"+String(WIDTH)+";H:"+String(HEIGHT)+";DM:";
       if (BTcontrol) str+="0;AP:"; else str+="1;AP:";
       if (AUTOPLAY)  str+="1;BR:"; else str+="0;BR:";
-      str+=String(globalBrightness) + ";PD:" + String(autoplayTime / 1000) + ";";
+      str+=String(globalBrightness) + ";PD:" + String(autoplayTime / 1000) + ";IT:" + String(idleTime / 1000) + ";";
       break;
     case 2:  // Рисование. Вернуть: Яркость; Цвет точки;
       color = ("000000" + String(globalColor, HEX));

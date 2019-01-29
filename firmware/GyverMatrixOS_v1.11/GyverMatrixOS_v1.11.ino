@@ -241,6 +241,7 @@ bool eepromModified = false;
 #include "fonts.h"
 #endif
 
+uint32_t idleTime = ((long)IDLE_TIME * 1000);
 uint32_t autoplayTime = ((long)AUTOPLAY_PERIOD * 1000);
 uint32_t autoplayTimer;
 
@@ -248,7 +249,7 @@ uint32_t autoplayTimer;
 timerMinim effectTimer(D_EFFECT_SPEED);
 timerMinim gameTimer(DEMO_GAME_SPEED);
 timerMinim scrollTimer(D_TEXT_SPEED);
-timerMinim idleTimer((long)IDLE_TIME * 1000);
+timerMinim idleTimer(idleTime);
 timerMinim changeTimer(70);
 timerMinim halfsecTimer(500);
 

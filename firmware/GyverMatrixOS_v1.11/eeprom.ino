@@ -14,7 +14,8 @@ void loadSettings() {
   //   5 - разрешен оверлей часов для эффектов
   //   6 - автосмена режима в демо: вкл/выкл
   //   7 - время автосмены режимов
-  //   8 - зарезервировано
+  //   8 - время бездействия до переключения в авторежим
+  //   9 - зарезервировано
   // ... - зарезервировано
   //  19 - зарезервировано
   //  20 - 20+(Nэфф*2)   - скорость эффекта
@@ -34,6 +35,7 @@ void loadSettings() {
     overlayEnabled = EEPROM.read(5);
     AUTOPLAY = EEPROM.read(6) == 1;
     autoplayTime = EEPROM.read(7) * 1000;
+    idleTime = EEPROM.read(8) * 1000;
   } else {
     globalBrightness = BRIGHTNESS;
     scrollSpeed = D_TEXT_SPEED;
@@ -42,6 +44,7 @@ void loadSettings() {
     overlayEnabled = true;
     AUTOPLAY = true;
     autoplayTime = ((long)AUTOPLAY_PERIOD * 1000);
+    idleTime = ((long)IDLE_TIME * 1000);
   }
 
   scrollTimer.setInterval(scrollSpeed);
@@ -208,6 +211,19 @@ long getAutoplayTime() {
   return time;
 }
 
+void saveIdleTime(long value) {
+  if (value != getIdleTime()) {
+    EEPROM.write(8, constrain(value / 1000, 0, 255));
+    eepromModified = true;
+  }
+}
+
+long getIdleTime() {
+  long time = EEPROM.read(8) * 1000;  
+  if (time == 0) time = ((long)IDLE_TIME * 1000);
+  return time;
+}
+
 #else
 
 void loadSettings() { }
@@ -230,5 +246,7 @@ void saveAutoplay(boolean value) { }
 bool getAutoplay() { return AUTOPLAY; }
 void saveAutoplayTime(long value) { }
 long getAutoplayTime() { return autoplayTime; }
+void saveIdleTime(long value) { }
+long getIdleTime() { return autoplayTime; }
 
 #endif

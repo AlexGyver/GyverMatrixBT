@@ -55,133 +55,76 @@ void bluetoothRoutine() {
       }
     #endif    
 
-    // Ручное управление из Android-программы
-    if (BTcontrol) {
-      
-      if (runningFlag) {                         // бегущая строка - Running Text
-        String text = runningText;
-        if (text == "") {
-          #if (USE_CLOCK == 1)          
-             text = clockCurrentText();
-          #else
-             text = "Gyver Matrix";
-          #endif           
-        }
-        fillString(text, globalColor); 
-      }
-      if (gameFlag && (!gamePaused|| loadingFlag)) games();       // игры
-      if (effectsFlag) effects();                 // эффекты
-      
-      if (runningFlag && !effectsFlag)  {         // Включенная бегущая строка только формирует строку в массиве точек матрицы, но не отображает ее
-        FastLED.show();                           // Если эффекты выключены - нужно принудительно вызывать отображение матрицы
-      }
-      
-    } else  {      
-      // Автоматический режим - все режимы по циклу
+    if (!BTcontrol && effectsFlag && !isColorEffect(effect)) effectsFlag = false;
 
-      // Бегущая строка (0,1,2) или Часы в основном режиме и эффект Дыхание или Цвета, Радуга пикс
-      if (effectsFlag && isColorEffect(effect) && (thisMode < 3 || thisMode == 27)) { 
-        // Подготовить изображение
-        customModes();
-        // Наложить эффект Дыхание / Цвета и вывести в матрицу
-        effects();
-        checkIdleState();
-      } else {
-        // Сформировать и вывести на матрицу текущий демо-режим
-        customRoutine();        
+    if (runningFlag) {                         // бегущая строка - Running Text
+      String text = runningText;
+      if (text == "") {
+        #if (USE_CLOCK == 1)          
+           text = clockCurrentText();
+        #else
+           text = "Gyver Matrix";
+        #endif           
       }
-    }    
+      fillString(text, globalColor); 
+      // Включенная бегущая строка только формирует строку в массиве точек матрицы, но не отображает ее
+      // Если эффекты выключены - нужно принудительно вызывать отображение матрицы
+      if (!effectsFlag) FastLED.show();
+    }
+
+    else if (drawingFlag) {
+      // Рисование. Если эффект цветов - применить
+      if (effectsFlag && isColorEffect(effect)) {  
+         effects();   
+      }
+    }
+    
+    // Один из режимов игры вручную. На игры эффекты не налагаются
+    else if (gameFlag && (!gamePaused || loadingFlag)) {
+      // Для игр отключаем бегущую строку и эффекты
+      if (effectsFlag) effectsFlag = false;
+      if (runningFlag) runningFlag = false;
+      customRoutine();        
+    }
+
+    // Бегущая строка (0,1,2) или Часы в основном режиме и эффект Дыхание или Цвета, Радуга пикс
+    else if ((thisMode < 3 || thisMode == 27) && effectsFlag && isColorEffect(effect)) { 
+      // Подготовить изображение
+      customModes();
+      // Наложить эффект Дыхание / Цвета и вывести в матрицу
+      effects();
+    } else {
+      // Сформировать и вывести на матрицу текущий демо-режим
+      if (!BTcontrol || effectsFlag) 
+        customRoutine();
+      else if (BTcontrol && effectsFlag && isColorEffect(effect)) {
+        effects();  
+      }
+    }            
+
+    // Проверить - если долгое время не было ручного управления - переключиться в автоматический режим
+    checkIdleState();
   }
 }
 
-// блок эффектов, работают по общему таймеру
+// Блок эффектов наложения цветовых эффектов на сформированное изображение
 void effects() {
   
+  // Эффекты наложения цвета на изображение, имеющееся на матрице
   // Только эффекты 0, 1 и 5 совместимы с бегущей строкой - они меняют цвет букв
   // Остальные эффекты портят бегущую строку - ее нужно отключать  
   if (runningFlag && !isColorEffect(effect)) runningFlag = false;  // Дыхание, Цвет, Радуга пикс
     
   if (effectTimer.isReady()) {
     switch (effect) {
-      case 0: brightnessRoutine();
+      case 0: brightnessRoutine();         // Дыхание
         break;
-      case 1: colorsRoutine();
+      case 1: colorsRoutine();             // Цвет
         break;
-      case 2: snowRoutine();
+      case 5: rainbowColorsRoutine();      // Радуга пикс.
         break;
-      case 3: ballRoutine();
-        break;
-      case 4: rainbowRoutine();
-        break;
-      case 5: rainbowColorsRoutine();
-        break;
-      case 6: fireRoutine();
-        break;
-      case 7: matrixRoutine();
-        break;
-      case 8: ballsRoutine();
-        break;
-      case 9: clockRoutine();
-        break;
-      case 10: starfallRoutine();
-        break;
-      case 11: sparklesRoutine();
-        break;
-      case 12: rainbowDiagonalRoutine();
-        break;
-      case 13: madnessNoise();
-        break;
-      case 14: cloudNoise();
-        break;
-      case 15: lavaNoise();
-        break;
-      case 16: plasmaNoise();
-        break;
-      case 17: rainbowNoise();
-        break;
-      case 18: rainbowStripeNoise();
-        break;
-      case 19: zebraNoise();
-        break;
-      case 20: forestNoise();
-        break;
-      case 21: oceanNoise();
-        break;
-#if (USE_ANIMATION == 1 && WIDTH == 16 && HEIGHT == 16)
-      case 22: animation();
-        break;
-#endif        
     }
     FastLED.show();
-  }
-}
-
-// блок игр
-void games() {
-
-  // Для игр отключаем бегущую строку и эффекты
-  if (effectsFlag) effectsFlag = false;
-  if (runningFlag) runningFlag = false;
-  
-  switch (game) {
-    case 0:
-      snakeRoutine();
-      break;
-    case 1:
-      tetrisRoutine();
-      break;
-    case 2:
-      mazeRoutine();
-      break;
-    case 3:
-      runnerRoutine();
-      break;
-    case 4:
-      flappyRoutine();
-      break;
-    case 5:
-      arkanoidRoutine();
-      break;
   }
 }
 
@@ -221,7 +164,7 @@ void parsing() {
     7 - управление текстом: $7 1; пуск, $7 0; стоп
     8 - эффект
       - $8 0 номерЭффекта;
-      - $8 1 старт/стоп;
+      - $8 1 N X старт/стоп; N - номер эффекта, X=0 - стоп X=1 - старт 
     9 - игра
     10 - кнопка вверх
     11 - кнопка вправо
@@ -250,9 +193,9 @@ void parsing() {
         break;
       case 1:
         BTcontrol = true;
-        if (!(drawingFlag || gameFlag)) {
-            FastLED.clear();
-        }
+        //if (!(drawingFlag || gameFlag)) {
+        //    FastLED.clear();
+        //}
         drawingFlag = true;
         runningFlag = false;
         if (gameFlag && game==1) gamePaused = true;
@@ -388,32 +331,37 @@ void parsing() {
         sendAcknowledge();
         break;
       case 8:
-        if (intData[1] == 0) {
-          
-          effect = intData[2];
-          gameFlag = false;
-          loadingFlag = !isColorEffect(effect);
-          effectsFlag = true;
-          if (!BTcontrol) BTcontrol = !isColorEffect(effect);     // При установке эффекта дыхание / цвета / радуга пикс - переключаться в управление по BT не нужно
-          if (!isColorEffect(effect)) drawingFlag = false;
-          
-          effectSpeed = getEffectSpeed(effect);
-          effectTimer.setInterval(effectSpeed);
-
-          // Отправить программе актуальное состояние параметров эффектов (5 - страница "Эффекты")
-          sendPageParams(5);
-          
-        } else if (intData[1] == 1) {
-          effectSpeed = getEffectSpeed(effect);
-          effectTimer.setInterval(effectSpeed);
-          effectsFlag = intData[2] == 1;
-        }
+        effect = intData[2];
+        gameFlag = false;
+        loadingFlag = !isColorEffect(effect);
+        effectsFlag = true;
+        if (!BTcontrol) BTcontrol = !isColorEffect(effect);     // При установке эффекта дыхание / цвета / радуга пикс - переключаться в управление по BT не нужно
+        if (!isColorEffect(effect)) drawingFlag = false;
         
+        effectSpeed = getEffectSpeed(effect);
+        effectTimer.setInterval(effectSpeed);
+                
+        effectSpeed = getEffectSpeed(effect);
+        effectTimer.setInterval(effectSpeed);
+
+        // intData[1] = 0 - выбор эффекта intData[1] = 1 - старт/стоп
+        // intData[3] = 0 - стоп intData[3] = 1 - старт
+        effectsFlag = intData[1] == 1 && intData[3] == 1; 
+        
+        // Найти соответствие thisMode указанному эффекту. 
+        // Дльнейшее отображение изображения эффекта будет выполняться стандартной процедурой customRoutin()
+        if (!isColorEffect(effect)) {            
+           b_tmp = mapEffectToMode(effect);
+           if (b_tmp != 255) thisMode = b_tmp;
+        }
+
         breathBrightness = globalBrightness;
         FastLED.setBrightness(globalBrightness);    
         
         // Для "0" - отправляются параметры, подтверждение отправлять не нужно. Для остальных - нужно
-        if (intData[1] != 0) {
+        if (intData[1] == 0) {
+          sendPageParams(5);
+        } else { 
           sendAcknowledge();
         }
         break;
@@ -431,6 +379,12 @@ void parsing() {
         gameFlag = true;
         gamePaused = true;
         game = intData[1];
+        
+        // Найти соответствие thisMode указанной игре. 
+        // Дльнейшее отображение изображения эффекта будет выполняться стандартной процедурой customRoutin()
+        b_tmp = mapGameToMode(game);
+        if (b_tmp != 255) thisMode = b_tmp;
+
         gameSpeed = getGameSpeed(game);
         gameTimer.setInterval(gameSpeed);        
         // Отправить программе актуальное состояние параметров эффектов (6 - страница "Игры")
@@ -510,14 +464,33 @@ void parsing() {
         }
         saveAutoplay(AUTOPLAY);
 
-        // Если при переключении в ручной режим был демонстрационный режим бегущей строки - включить ручной режим бегщей строки
-        if (intData[1] == 0 || (intData[1] == 1 && thisMode < 3)) {
-          loadingFlag = true;
-          runningFlag = true;          
+        if (!BTcontrol) {
+          runningFlag = false;
+          controlFlag = false;      // После начала игры пока не трогаем кнопки - игра автоматическая 
+          drawingFlag = false;
+          gameFlag = false;
+          gamePaused = false;
+          loadingFlag = true;       // если false - при переключении с эффекта бегущий текст на демо-режим "бегущий текст" текст демо режима не сначала, а с позиции где бежал текст эффекта
+                                    // если true - текст начинает бежать сначала, потом плавно затухает на смену режима и потом опять начинает сначала.
+                                    // И так и так не хорошо. Как починить? 
+        } else {
+          // Если при переключении в ручной режим был демонстрационный режим бегущей строки - включить ручной режим бегщей строки
+          if (intData[1] == 0 || (intData[1] == 1 && thisMode < 3)) {
+            loadingFlag = true;
+            runningFlag = true;          
+          }
         }
-        sendAcknowledge();
+
+        if (!BTcontrol && AUTOPLAY) {
+          sendPageParams(1);
+        } else {        
+          sendAcknowledge();
+        }
+        
         break;
-      case 17: autoplayTime = ((long)intData[1] * 1000);
+      case 17: 
+        autoplayTime = ((long)intData[1] * 1000);
+        saveAutoplayTime(autoplayTime);
         idleState = !BTcontrol && AUTOPLAY; 
         if (AUTOPLAY) {
           autoplayTimer = millis();
@@ -719,6 +692,8 @@ void sendPageParams(int page) {
   // SG:число   скорость игры
   // CE:X       оверлей часов вкл/выкл, где Х = 0 - выкл; 1 - вкл
   String str = "", color, text;
+  boolean allowed;
+  byte b_tmp;
   switch (page) { 
     case 1:  // Настройки. Вернуть: Ширина/Высота матрицы; Яркость; Деморежм и Автосмена; Время смены режимо
       str="$18 W:"+String(WIDTH)+";H:"+String(HEIGHT)+";DM:";
@@ -741,11 +716,19 @@ void sendPageParams(int page) {
       if (runningFlag)  str+="1;TX:["; else str+="0;TX:[";
       str += text + "]" + ";";
       break;
-    case 5:  // Эффекты. Вернуть: Номер эффекта, Остановлен или играет; Яркость; Скорость эффекта? Оверлей часовв 
+    case 5:  // Эффекты. Вернуть: Номер эффекта, Остановлен или играет; Яркость; Скорость эффекта; Оверлей часов 
+      allowed = false;
+      b_tmp = mapEffectToMode(effect);
+      if (b_tmp != 255) {
+        for (byte i = 0; i < sizeof(overlayList); i++) {
+          allowed = (b_tmp == overlayList[i]);
+          if (allowed) break;
+        }
+      }
       str="$18 EF:"+String(effect+1) + ";ES:";
       if (effectsFlag)  str+="1;BR:"; else str+="0;BR:";
       str+=String(globalBrightness) + ";SE:" + String(constrain(map(effectSpeed, D_EFFECT_SPEED_MIN,D_EFFECT_SPEED_MAX, 0, 255), 0,255));
-      if (isColorEffect(effect) || effect == MC_CLOCK) 
+      if (isColorEffect(effect) || !allowed || effect == 9) 
           str+=";EC:X;";  // X - параметр не используется (неприменим)
       else    
           str+=";EC:" + String(getEffectClock(effect)) + ";";
@@ -824,6 +807,137 @@ bool isColorEffect(byte effect) {
   // Они могут работать с custom демо режимами
   return (effect >= 0 && effect <= 1) || effect == 5;
 }
+
+byte mapEffectToMode(byte effect) {
+  byte tmp_mode = 255;
+  
+  switch (effect) {
+    case 2:  tmp_mode = 12; break;       // snowRoutine();
+    case 3:  tmp_mode = 16; break;       // ballRoutine();
+    case 4:  tmp_mode = 18; break;       // rainbowRoutine();
+    case 6:  tmp_mode = 20; break;       // fireRoutine()
+    case 7:  tmp_mode = 14; break;       // matrixRoutine();
+    case 8:  tmp_mode = 17; break;       // ballsRoutine();
+    case 9:  tmp_mode = 27; break;       // clockRoutine();
+    case 10: tmp_mode = 15; break;       // starfallRoutine()
+    case 11: tmp_mode = 13; break;       // sparklesRoutine()
+    case 12: tmp_mode = 19; break;       // rainbowDiagonalRoutine();
+    case 13: tmp_mode = 3;  break;       // madnessNoise();
+    case 14: tmp_mode = 4;  break;       // cloudNoise();
+    case 15: tmp_mode = 5;  break;       // lavaNoise();
+    case 16: tmp_mode = 6;  break;       // plasmaNoise();
+    case 17: tmp_mode = 7;  break;       // rainbowNoise();
+    case 18: tmp_mode = 8;  break;       // rainbowStripeNoise();
+    case 19: tmp_mode = 9;  break;       // zebraNoise();
+    case 20: tmp_mode = 10; break;       // forestNoise();
+    case 21: tmp_mode = 11; break;       // oceanNoise();
+    case 22: tmp_mode = 28; break;       // animation();
+
+    // Нет соответствия - выполняются для текущего режима thisMode
+    case 0:  // Дыхание
+    case 1:  // Цвет
+    case 5:  // Радуга пикс
+      break;
+  }
+
+  return tmp_mode;
+}
+
+byte mapGameToMode(byte game) {
+  byte tmp_mode = 255;
+  
+  switch (game) {
+    case 0: tmp_mode = 21; break;  // snakeRoutine(); 
+    case 1: tmp_mode = 22; break;  // tetrisRoutine();
+    case 2: tmp_mode = 23; break;  // mazeRoutine();
+    case 3: tmp_mode = 24; break;  // runnerRoutine();
+    case 4: tmp_mode = 25; break;  // flappyRoutine();
+    case 5: tmp_mode = 26; break;  // arkanoidRoutine();
+  }
+
+  return tmp_mode;
+}
+
+byte mapModeToEffect(byte aMode) {
+  byte tmp_effect = 255;
+  // Если режима нет в списке - ему нет соответствия среди эффектов - значит это игра или бегущий текст
+  switch (aMode) {
+    case 3:  tmp_effect = 13; break;       // madnessNoise();
+    case 4:  tmp_effect = 14; break;       // cloudNoise();
+    case 5:  tmp_effect = 15; break;       // lavaNoise();
+    case 6:  tmp_effect = 16; break;       // plasmaNoise();
+    case 7:  tmp_effect = 17; break;       // rainbowNoise();
+    case 8:  tmp_effect = 18; break;       // rainbowStripeNoise();
+    case 9:  tmp_effect = 19; break;       // zebraNoise();
+    case 10: tmp_effect = 20; break;       // forestNoise();
+    case 11: tmp_effect = 21; break;       // oceanNoise();
+    case 12: tmp_effect = 2;  break;       // snowRoutine();
+    case 13: tmp_effect = 11; break;       // sparklesRoutine()
+    case 14: tmp_effect = 7;  break;       // matrixRoutine();
+    case 15: tmp_effect = 10; break;       // starfallRoutine()
+    case 16: tmp_effect = 3;  break;       // ballRoutine();
+    case 17: tmp_effect = 8;  break;       // ballsRoutine();
+    case 18: tmp_effect = 4;  break;       // rainbowRoutine();
+    case 19: tmp_effect = 12; break;       // rainbowDiagonalRoutine();
+    case 20: tmp_effect = 6;  break;       // fireRoutine()
+    case 28: tmp_effect = 22; break;       // animation();
+
+    case 0:  break;  // Бегущий текст
+    case 1:  break;  // Бегущий текст
+    case 2:  break;  // Бегущий текст
+
+    case 21: break;  // snakeRoutine(); 
+    case 22: break;  // tetrisRoutine();
+    case 23: break;  // mazeRoutine();
+    case 24: break;  // runnerRoutine();
+    case 25: break;  // flappyRoutine();
+    case 26: break;  // arkanoidRoutine();
+    
+    case 27: break;  // clockRoutine();     
+  }
+  return tmp_effect;
+}
+
+byte mapModeToGame(byte aMode) {
+  byte tmp_game = 255;
+  // Если режима нет в списке - ему нет соответствия среди тгр - значит это эффект или бегущий текст
+  switch (aMode) {
+    case 3:  break;  // madnessNoise();
+    case 4:  break;  // cloudNoise();
+    case 5:  break;  // lavaNoise();
+    case 6:  break;  // plasmaNoise();
+    case 7:  break;  // rainbowNoise();
+    case 8:  break;  // rainbowStripeNoise();
+    case 9:  break;  // zebraNoise();
+    case 10: break;  // forestNoise();
+    case 11: break;  // oceanNoise();
+    case 12: break;  // snowRoutine();
+    case 13: break;  // sparklesRoutine()
+    case 14: break;  // matrixRoutine();
+    case 15: break;  // starfallRoutine()
+    case 16: break;  // ballRoutine();
+    case 17: break;  // ballsRoutine();
+    case 18: break;  // rainbowRoutine();
+    case 19: break;  // rainbowDiagonalRoutine();
+    case 20: break;  // fireRoutine()
+    case 28: break;  // animation();
+
+    case 0:  break;  // Бегущий текст
+    case 1:  break;  // Бегущий текст
+    case 2:  break;  // Бегущий текст
+
+    case 21: tmp_game = 0; break;  // snakeRoutine(); 
+    case 22: tmp_game = 1; break;  // tetrisRoutine();
+    case 23: tmp_game = 2; break;  // mazeRoutine();
+    case 24: tmp_game = 3; break;  // runnerRoutine();
+    case 25: tmp_game = 4; break;  // flappyRoutine();
+    case 26: tmp_game = 5; break;  // arkanoidRoutine();
+    
+    case 27: break;  // clockRoutine();     
+  }
+  return tmp_game;
+}
+
 
 #else
 void bluetoothRoutine() {

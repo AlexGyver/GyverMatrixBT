@@ -18,28 +18,6 @@
 #define HUE_STEP 5          // шаг цвета часов в режиме радужной смены
 #define HUE_GAP 30          // шаг цвета между цифрами в режиме радужной смены
 
-// эффекты, в которых отображаются часы в наложении
-byte overlayList[] = {
-  MC_NOISE_MADNESS,
-  MC_NOISE_CLOUD,
-  MC_NOISE_LAVA,
-  MC_NOISE_PLASMA,
-  MC_NOISE_RAINBOW,
-  MC_NOISE_RAINBOW_STRIP,
-  MC_NOISE_ZEBRA,
-  MC_NOISE_FOREST,
-  MC_NOISE_OCEAN,
-  MC_SNOW,
-  MC_SPARKLES,
-  MC_MATRIX,
-  MC_STARFALL,
-  MC_BALL,
-  MC_BALLS,
-  MC_RAINBOW,
-  MC_RAINBOW_DIAG,
-  MC_FIRE
-};
-
 // ****************** ДЛЯ РАЗРАБОТЧИКОВ ****************
 bool overlayEnabled = getClockOverlayEnabled();
 byte listSize = sizeof(overlayList);
@@ -145,6 +123,7 @@ boolean overlayAllowed() {
     if (tmp_effect <= MAX_EFFECT) 
       allowed = getEffectClock(tmp_effect);   
   }
+
   return allowed;
 }
 

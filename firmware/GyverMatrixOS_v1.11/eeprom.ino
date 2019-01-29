@@ -13,7 +13,8 @@ void loadSettings() {
   //   4 - скорость игр по умолчанию
   //   5 - разрешен оверлей часов для эффектов
   //   6 - автосмена режима в демо: вкл/выкл
-  //   7 - зарезервировано
+  //   7 - время автосмены режимов
+  //   8 - зарезервировано
   // ... - зарезервировано
   //  19 - зарезервировано
   //  20 - 20+(Nэфф*2)   - скорость эффекта
@@ -32,6 +33,7 @@ void loadSettings() {
     gameSpeed = map(EEPROM.read(4),0,255,D_GAME_SPEED_MIN,D_GAME_SPEED_MAX);   
     overlayEnabled = EEPROM.read(5);
     AUTOPLAY = EEPROM.read(6) == 1;
+    autoplayTime = EEPROM.read(7) * 1000;
   } else {
     globalBrightness = BRIGHTNESS;
     scrollSpeed = D_TEXT_SPEED;
@@ -39,6 +41,7 @@ void loadSettings() {
     gameSpeed = D_GAME_SPEED;
     overlayEnabled = true;
     AUTOPLAY = true;
+    autoplayTime = ((long)AUTOPLAY_PERIOD * 1000);
   }
 
   scrollTimer.setInterval(scrollSpeed);
@@ -53,6 +56,16 @@ void loadSettings() {
 }
 
 void saveDefaults() {
+
+  EEPROM.write(1, globalBrightness);
+
+  EEPROM.write(2, constrain(map(scrollSpeed, D_TEXT_SPEED_MIN, D_TEXT_SPEED_MAX, 0, 255), 0, 255));
+  EEPROM.write(3, constrain(map(effectSpeed, D_EFFECT_SPEED_MIN, D_EFFECT_SPEED_MAX, 0, 255), 0, 255));
+  EEPROM.write(4, constrain(map(gameSpeed, D_GAME_SPEED_MIN, D_GAME_SPEED_MAX, 0, 255), 0, 255));
+
+  EEPROM.write(5, overlayEnabled);
+  EEPROM.write(6, AUTOPLAY ? 1 : 0);
+  EEPROM.write(7, autoplayTime / 1000);
 
   // Настройки по умолчанию для эффектов
   int addr = EFFECT_EEPROM;
@@ -75,13 +88,6 @@ void saveSettings() {
   
   // Поставить отметку, что EEPROM инициализировано параметрами эффектов
   EEPROM.write(0, EEPROM_OK);
-  EEPROM.write(1, globalBrightness);
-
-  EEPROM.write(2, constrain(map(scrollSpeed, D_TEXT_SPEED_MIN, D_TEXT_SPEED_MAX, 0, 255), 0, 255));
-  EEPROM.write(3, constrain(map(effectSpeed, D_EFFECT_SPEED_MIN, D_EFFECT_SPEED_MAX, 0, 255), 0, 255));
-  EEPROM.write(4, constrain(map(gameSpeed, D_GAME_SPEED_MIN, D_GAME_SPEED_MAX, 0, 255), 0, 255));
-
-  EEPROM.write(5, overlayEnabled);
 
   EEPROM.commit();
 
@@ -146,13 +152,12 @@ int getGameSpeed(byte game) {
 }
 
 boolean getClockOverlayEnabled() {
-  const int addr = EFFECT_EEPROM;
   return EEPROM.read(5) == 1;
 }
 
 void saveClockOverlayEnabled(boolean enabled) {
   if (enabled != getClockOverlayEnabled()) {
-    EEPROM.write(5, overlayEnabled);
+    EEPROM.write(5, enabled ? 1 : 0);
     eepromModified = true;
   }
 }
@@ -174,16 +179,33 @@ byte getMaxBrightness() {
 
 void saveMaxBrightness(byte brightness) {
   if (brightness != getMaxBrightness()) {
-     EEPROM.write(1, globalBrightness);
+    EEPROM.write(1, globalBrightness);
+    eepromModified = true;
   }
 }
 
 void saveAutoplay(boolean value) {
-  EEPROM.write(6, value);
+  if (value != getAutoplay()) {
+    EEPROM.write(6, value);
+    eepromModified = true;
+  }
 }
 
 bool getAutoplay() {
   return EEPROM.read(6) == 1;
+}
+
+void saveAutoplayTime(long value) {
+  if (value != getAutoplayTime()) {
+    EEPROM.write(7, constrain(value / 1000, 0, 255));
+    eepromModified = true;
+  }
+}
+
+long getAutoplayTime() {
+  long time = EEPROM.read(7) * 1000;  
+  if (time == 0) time = ((long)AUTOPLAY_PERIOD * 1000);
+  return time;
 }
 
 #else
@@ -206,5 +228,7 @@ byte getMaxBrightness(byte brightness) { return globalBrightness; }
 void saveMaxBrightness(byte brightness) {}
 void saveAutoplay(boolean value) { }
 bool getAutoplay() { return AUTOPLAY; }
+void saveAutoplayTime(long value) { }
+long getAutoplayTime() { return autoplayTime; }
 
 #endif

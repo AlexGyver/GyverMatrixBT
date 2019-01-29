@@ -157,6 +157,30 @@ CRGB leds[NUM_LEDS];
 #define MC_FIRE 20
 #define MC_IMAGE 21
 
+// эффекты, в которых отображаются часы в наложении
+#if (USE_CLOCK == 1)
+byte overlayList[] = {
+  MC_NOISE_MADNESS,
+  MC_NOISE_CLOUD,
+  MC_NOISE_LAVA,
+  MC_NOISE_PLASMA,
+  MC_NOISE_RAINBOW,
+  MC_NOISE_RAINBOW_STRIP,
+  MC_NOISE_ZEBRA,
+  MC_NOISE_FOREST,
+  MC_NOISE_OCEAN,
+  MC_SNOW,
+  MC_SPARKLES,
+  MC_MATRIX,
+  MC_STARFALL,
+  MC_BALL,
+  MC_BALLS,
+  MC_RAINBOW,
+  MC_RAINBOW_DIAG,
+  MC_FIRE
+};
+#endif
+
 #if (MCU_TYPE == 1)
   #define FASTLED_INTERRUPT_RETRY_COUNT 0
   #define FASTLED_ALLOW_INTERRUPTS 0

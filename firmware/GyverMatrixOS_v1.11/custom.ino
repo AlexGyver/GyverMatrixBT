@@ -128,86 +128,6 @@ void customModes() {
   }
 }
 
-byte mapModeToEffect(byte aMode) {
-  byte tmp_effect = 255;
-  // Если режима нет в списке - ему нет соответствия среди эффектов - значит это игра или бегущий текст
-  switch (aMode) {
-    case 3:  tmp_effect = 13; break;       // madnessNoise();
-    case 4:  tmp_effect = 14; break;       // cloudNoise();
-    case 5:  tmp_effect = 15; break;       // lavaNoise();
-    case 6:  tmp_effect = 16; break;       // plasmaNoise();
-    case 7:  tmp_effect = 17; break;       // rainbowNoise();
-    case 8:  tmp_effect = 18; break;       // rainbowStripeNoise();
-    case 9:  tmp_effect = 19; break;       // zebraNoise();
-    case 10: tmp_effect = 20; break;       // forestNoise();
-    case 11: tmp_effect = 21; break;       // oceanNoise();
-    case 12: tmp_effect = 2;  break;       // snowRoutine();
-    case 13: tmp_effect = 11; break;       // sparklesRoutine()
-    case 14: tmp_effect = 7;  break;       // matrixRoutine();
-    case 15: tmp_effect = 10; break;       // starfallRoutine()
-    case 16: tmp_effect = 3;  break;       // ballRoutine();
-    case 17: tmp_effect = 8;  break;       // ballsRoutine();
-    case 18: tmp_effect = 4;  break;       // rainbowRoutine();
-    case 19: tmp_effect = 12; break;       // rainbowDiagonalRoutine();
-    case 20: tmp_effect = 6;  break;       // fireRoutine()
-    case 28: tmp_effect = 22; break;       // animation();
-
-    case 0:  break;  // Бегущий текст
-    case 1:  break;  // Бегущий текст
-    case 2:  break;  // Бегущий текст
-
-    case 21: break;  // snakeRoutine(); 
-    case 22: break;  // tetrisRoutine();
-    case 23: break;  // mazeRoutine();
-    case 24: break;  // runnerRoutine();
-    case 25: break;  // flappyRoutine();
-    case 26: break;  // arkanoidRoutine();
-    
-    case 27: break;  // clockRoutine();     
-  }
-  return tmp_effect;
-}
-
-byte mapModeToGame(byte aMode) {
-  byte tmp_game = 255;
-  // Если режима нет в списке - ему нет соответствия среди тгр - значит это эффект или бегущий текст
-  switch (aMode) {
-    case 3:  break;  // madnessNoise();
-    case 4:  break;  // cloudNoise();
-    case 5:  break;  // lavaNoise();
-    case 6:  break;  // plasmaNoise();
-    case 7:  break;  // rainbowNoise();
-    case 8:  break;  // rainbowStripeNoise();
-    case 9:  break;  // zebraNoise();
-    case 10: break;  // forestNoise();
-    case 11: break;  // oceanNoise();
-    case 12: break;  // snowRoutine();
-    case 13: break;  // sparklesRoutine()
-    case 14: break;  // matrixRoutine();
-    case 15: break;  // starfallRoutine()
-    case 16: break;  // ballRoutine();
-    case 17: break;  // ballsRoutine();
-    case 18: break;  // rainbowRoutine();
-    case 19: break;  // rainbowDiagonalRoutine();
-    case 20: break;  // fireRoutine()
-    case 28: break;  // animation();
-
-    case 0:  break;  // Бегущий текст
-    case 1:  break;  // Бегущий текст
-    case 2:  break;  // Бегущий текст
-
-    case 21: tmp_game = 0; break;  // snakeRoutine(); 
-    case 22: tmp_game = 1; break;  // tetrisRoutine();
-    case 23: tmp_game = 2; break;  // mazeRoutine();
-    case 24: tmp_game = 3; break;  // runnerRoutine();
-    case 25: tmp_game = 4; break;  // flappyRoutine();
-    case 26: tmp_game = 5; break;  // arkanoidRoutine();
-    
-    case 27: break;  // clockRoutine();     
-  }
-  return tmp_game;
-}
-
 // ********************* ОСНОВНОЙ ЦИКЛ РЕЖИМОВ *******************
 #if (SMOOTH_CHANGE == 1)
 byte fadeMode = 4;
@@ -342,7 +262,6 @@ void customRoutine() {
   }
   FastLED.show();
   btnsModeChange();
-  checkIdleState();
 }
 
 void checkIdleState() {
@@ -380,8 +299,14 @@ void checkIdleState() {
       gameSpeed = DEMO_GAME_SPEED;
       gameTimer.setInterval(gameSpeed);
 
-      loadingFlag = true;
       BTcontrol = false;
+      loadingFlag = true;
+      runningFlag = false;
+      controlFlag = false;                      // Посе начала игры пока не трогаем кнопки - игра автоматическая 
+      drawingFlag = false;
+      gameFlag = false;
+      gamePaused = false;
+      
       FastLED.clear();
       FastLED.show();
     }

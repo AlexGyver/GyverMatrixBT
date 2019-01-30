@@ -121,10 +121,8 @@ void customModes() {
       break;
     case 27: clockRoutine();
       break;
-#if (USE_ANIMATION == 1 && WIDTH == 16 && HEIGHT == 16)
     case 28: animation();
       break;
-#endif      
   }
 }
 
@@ -233,34 +231,57 @@ void modeFader() {
 void customRoutine() {
    
   if (!gamemodeFlag) {
-    if (effectTimer.isReady()) {
+
+    // Беугщая строка - таймер внутри fillString (runningText.ino)
+    if (thisMode >=0 && thisMode < 3) { 
+      customModes();
+      FastLED.show();
+    } 
+
+    // Эффекты - возможно наложение часов
+    else {
       
+      if (effectTimer.isReady()) {
+        
 #if (OVERLAY_CLOCK == 1 && USE_CLOCK == 1)
-      boolean loadFlag2;
-      boolean needOverlay = modeCode != MC_TEXT && overlayAllowed();
-      if (needOverlay) {
-        if (!loadingFlag && needUnwrap()) clockOverlayUnwrap(CLOCK_X, CLOCK_Y);
-        if (loadingFlag) loadFlag2 = true;
-      }
-#endif
-
-      customModes();                // режимы крутятся, пиксели мутятся
-
-#if (OVERLAY_CLOCK == 1 && USE_CLOCK == 1)
-      if (needOverlay) {
-        clockOverlayWrap(CLOCK_X, CLOCK_Y);
-        if (loadFlag2) {
-          setOverlayColors();
-          loadFlag2 = false;
+        boolean loadFlag2;
+        boolean needOverlay = modeCode != MC_TEXT && overlayAllowed();
+        if (needOverlay) {
+          if (!loadingFlag && needUnwrap()) {
+            if (CLOCK_ORIENT == 0)
+              clockOverlayUnwrapH(CLOCK_X, CLOCK_Y);
+            else
+              clockOverlayUnwrapV(CLOCK_X, CLOCK_Y);
+          }
+          if (loadingFlag) loadFlag2 = true;
         }
-      }
 #endif
-      loadingFlag = false;
+
+        customModes();                // режимы крутятся, пиксели мутятся
+
+#if (OVERLAY_CLOCK == 1 && USE_CLOCK == 1)
+        if (needOverlay) {
+          if (CLOCK_ORIENT == 0)
+            clockOverlayWrapH(CLOCK_X, CLOCK_Y);
+          else  
+            clockOverlayWrapV(CLOCK_X, CLOCK_Y);
+          if (loadFlag2) {
+            setOverlayColors();
+            loadFlag2 = false;
+          }
+        }
+        loadingFlag = false;
+#endif
+        FastLED.show();
+      }
     }
-  } else {
+  } 
+
+  // Игры - таймер внутри игр
+  else {
     customModes();
   }
-  FastLED.show();
+  
   btnsModeChange();
 }
 
@@ -275,7 +296,7 @@ void checkIdleState() {
     if (fullTextFlag && SHOW_TEXT_ONCE) {
       fullTextFlag = false;
       autoplayTimer = millis();
-      nextMode();
+      if (AUTOPLAY) nextMode();
     }
     
     if (millis() - autoplayTimer > autoplayTime && AUTOPLAY) {    // таймер смены режима
@@ -291,8 +312,8 @@ void checkIdleState() {
       }
     }
   } else {
-    if (idleTimer.isReady()) {      // таймер холостого режима
-      idleState = true;
+    if (idleTimer.isReady() && modeCode != MC_CLOCK) {      // таймер холостого режима. 
+      idleState = true;                                     // Если находимся в режиме часов - автоматически из Idle в демо-режим не переходить 
       autoplayTimer = millis();
       gameDemo = true;
 
@@ -302,10 +323,12 @@ void checkIdleState() {
       BTcontrol = false;
       loadingFlag = true;
       runningFlag = false;
-      controlFlag = false;                      // Посе начала игры пока не трогаем кнопки - игра автоматическая 
+      controlFlag = false;                      // После начала игры пока не трогаем кнопки - игра автоматическая 
       drawingFlag = false;
-      gameFlag = false;
+      gamemodeFlag = false;
       gamePaused = false;
+
+      AUTOPLAY = true;
       
       FastLED.clear();
       FastLED.show();
@@ -438,14 +461,14 @@ void btnsModeChange() {
   if (bt_set.holded()) {
     if (modeCode == MC_GAME)
       mazeMode = !mazeMode;
+#if (USE_CLOCK == 1 && USE_RTC == 1)
     if (modeCode == MC_CLOCK) {    // вход в настройку часов
       clockSet = !clockSet;
       AUTOPLAY = false;
       secs = 0;
-#if (USE_CLOCK == 1 && USE_RTC == 1)
       if (!clockSet) rtc.adjust(DateTime(2014, 1, 21, hrs, mins, 0)); // установка нового времени в RTC
-#endif
     }
+#endif
   }
 
   // timeSet type: 0-часы, 1-минуты, dir: 0-уменьшить, 1-увеличить
@@ -456,10 +479,12 @@ void btnsModeChange() {
         autoplayTimer = millis();
         nextMode();
       } else {
-#if (MCU_TYPE == 1)
+#if (USE_CLOCK == 1 && USE_RTC == 1)        
+  #if (WIFI_MODE == 1)
         adjustTime(60);
-#else
+  #else
         timeSet(1, 1);
+  #endif
 #endif
       }
     }
@@ -469,11 +494,13 @@ void btnsModeChange() {
         autoplayTimer = millis();
         prevMode();
       } else {
-#if (MCU_TYPE == 1)
+#if (USE_CLOCK == 1 && USE_RTC == 1)        
+  #if (WIFI_MODE == 1)
         adjustTime(-60);
-#else
+  #else
         timeSet(1, 0);
-#endif
+  #endif
+#endif  
       }
     }
 
@@ -482,22 +509,26 @@ void btnsModeChange() {
         AUTOPLAY = true;
         autoplayTimer = millis();
       } else {
-#if (MCU_TYPE == 1)
+#if (USE_CLOCK == 1 && USE_RTC == 1)        
+  #if (WIFI_MODE == 1)
         adjustTime(3600);
-#else
+  #else
         timeSet(0, 1);
-#endif
+  #endif
+#endif  
       }
     }
     if (bt_down.clicked()) {
       if (!clockSet) {
         AUTOPLAY = false;
       } else {
-#if (MCU_TYPE == 1)
+#if (USE_CLOCK == 1 && USE_RTC == 1)        
+  #if (WIFI_MODE == 1)
         adjustTime(-3600);
-#else
+  #else
         timeSet(0, 0);
-#endif
+  #endif
+#endif  
       }
     }
 
@@ -514,18 +545,20 @@ void btnsModeChange() {
             if (effectSpeed < D_EFFECT_SPEED_MIN) effectSpeed = D_EFFECT_SPEED_MIN;
             saveEffectSpeed(effect, effectSpeed);
             effectTimer.setInterval(effectSpeed);
-          } else if (gameFlag) {
+          } else if (gamemodeFlag) {
             gameSpeed -= 2;
             if (gameSpeed < D_GAME_SPEED_MIN) gameSpeed = D_GAME_SPEED_MIN;
             saveGameSpeed(game, gameSpeed);
             gameTimer.setInterval(gameSpeed);
           }
         } else {
-#if (MCU_TYPE == 1)
+#if (USE_CLOCK == 1 && USE_RTC == 1)        
+  #if (WIFI_MODE == 1)
           adjustTime(60);
-#else
+  #else
           timeSet(1, 1);
-#endif
+  #endif
+#endif  
         }
       }
     if (bt_left.holding())
@@ -541,18 +574,20 @@ void btnsModeChange() {
             if (effectSpeed > D_EFFECT_SPEED_MAX) effectSpeed = D_EFFECT_SPEED_MAX;
             saveEffectSpeed(effect, effectSpeed);
             effectTimer.setInterval(effectSpeed);
-          } else if (gameFlag) {
+          } else if (gamemodeFlag) {
             gameSpeed += 2;
             if (gameSpeed > D_GAME_SPEED_MAX) gameSpeed = D_GAME_SPEED_MAX;
             saveGameSpeed(game, gameSpeed);
             gameTimer.setInterval(gameSpeed);
           }
         } else {
-#if (MCU_TYPE == 1)
+#if (USE_CLOCK == 1 && USE_RTC == 1)        
+  #if (WIFI_MODE == 1)
           adjustTime(-60);
-#else
+  #else
           timeSet(1, 0);
-#endif
+  #endif
+#endif  
         }
       }
     if (bt_up.holding())
@@ -563,11 +598,13 @@ void btnsModeChange() {
           saveMaxBrightness(globalBrightness);
           FastLED.setBrightness(globalBrightness);
         } else {
-#if (MCU_TYPE == 1)
+#if (USE_CLOCK == 1 && USE_RTC == 1)        
+  #if (WIFI_MODE == 1)
           adjustTime(3600);
-#else
+  #else
           timeSet(0, 1);
-#endif
+  #endif
+#endif  
         }
       }
     if (bt_down.holding())
@@ -578,11 +615,13 @@ void btnsModeChange() {
           saveMaxBrightness(globalBrightness);
           FastLED.setBrightness(globalBrightness);
         } else {
-#if (MCU_TYPE == 1)
+#if (USE_CLOCK == 1 && USE_RTC == 1)        
+  #if (WIFI_MODE == 1)
           adjustTime(-3600);
-#else
+  #else
           timeSet(0, 0);
-#endif
+  #endif
+#endif  
         }
       }
   }

@@ -6,9 +6,7 @@
 #define divider ' '          // разделительный символ
 #define ending ';'           // завершающий символ
 
-boolean gamePaused;          // игра приостановлена
-
-byte intData[PARSE_AMOUNT];  // массив численных значений после парсинга
+int16_t intData[PARSE_AMOUNT];  // массив численных значений после парсинга
 uint32_t prevColor;
 boolean recievedFlag;
 byte lastMode = 0;
@@ -30,17 +28,21 @@ void bluetoothRoutine() {
       if (WifiTimer.isReady() && wifi_connected) {
   
         #if (USE_CLOCK == 1)    
-          if (ntp_t > 0 && millis() - ntp_t > 3000) {
-            Serial.println("NTP request timeout!");
-            ntp_t = 0;
-          }
-          if (NTPCheck.isReady() || (init_time == 0 && ntp_t == 0)) {
-            getNTP();
+          if (useNtp) {
+            if (ntp_t > 0 && millis() - ntp_t > 3000) {
+              Serial.println("NTP request timeout!");
+              init_time = 0;
+              ntp_t = 0;
+            }
+            if (ntpTimer.isReady() || (init_time == 0 && ntp_t == 0)) {
+              getNTP();
+            }
           }
         #endif
       
         #if (GET_WEATHER == 1)    
           if (weather_t > 0 && millis() - weather_t > 5000) {
+            init_weather = 0;
             weather_t = 0;
             Serial.println("Weather request timeout!");
             client.stop();
@@ -69,7 +71,10 @@ void bluetoothRoutine() {
       fillString(text, globalColor); 
       // Включенная бегущая строка только формирует строку в массиве точек матрицы, но не отображает ее
       // Если эффекты выключены - нужно принудительно вызывать отображение матрицы
-      if (!effectsFlag) FastLED.show();
+      if (!effectsFlag) 
+        FastLED.show();
+      else if (isColorEffect(effect)) 
+        effects();   
     }
 
     else if (drawingFlag) {
@@ -79,11 +84,11 @@ void bluetoothRoutine() {
       }
     }
     
-    // Один из режимов игры вручную. На игры эффекты не налагаются
-    else if (gameFlag && (!gamePaused || loadingFlag)) {
+    // Один из режимов игры. На игры эффекты не налагаются
+    else if (gamemodeFlag && (!gamePaused || loadingFlag)) {
       // Для игр отключаем бегущую строку и эффекты
-      if (effectsFlag) effectsFlag = false;
-      if (runningFlag) runningFlag = false;
+      effectsFlag = false;
+      runningFlag = false;
       customRoutine();        
     }
 
@@ -193,14 +198,11 @@ void parsing() {
         break;
       case 1:
         BTcontrol = true;
-        //if (!(drawingFlag || gameFlag)) {
-        //    FastLED.clear();
-        //}
         drawingFlag = true;
         runningFlag = false;
-        if (gameFlag && game==1) gamePaused = true;
+        if (gamemodeFlag && game==1) gamePaused = true;
         else {
-          gameFlag = false;
+          gamemodeFlag = false;
           gamePaused = false;
         }
         if (!isColorEffect(effect)) {
@@ -214,7 +216,7 @@ void parsing() {
         BTcontrol = true;
         runningFlag = false;
         drawingFlag = true;
-        gameFlag = false;
+        gamemodeFlag = false;
         gamePaused = false;
         if (!isColorEffect(effect)) {
             effectsFlag = false;
@@ -226,7 +228,7 @@ void parsing() {
       case 3:
         BTcontrol = true;
         runningFlag = false;
-        gameFlag = false;
+        gamemodeFlag = false;
         gamePaused = false;
         drawingFlag = true;
         if (!isColorEffect(effect)) {
@@ -253,7 +255,7 @@ void parsing() {
         
         effectsFlag = false;        
         runningFlag = false;
-        gameFlag = false;
+        gamemodeFlag = false;
         drawingFlag = true;
         loadingFlag = false;
 
@@ -322,7 +324,7 @@ void parsing() {
         if (intData[1] == 1) runningFlag = true;
         if (intData[1] == 0) runningFlag = false;
         if (runningFlag) {
-          gameFlag = false;
+          gamemodeFlag = false;
           drawingFlag = false;
           if (!isColorEffect(effect)) {
             effectsFlag = false;
@@ -332,11 +334,14 @@ void parsing() {
         break;
       case 8:
         effect = intData[2];
-        gameFlag = false;
+        gamemodeFlag = false;
         loadingFlag = !isColorEffect(effect);
         effectsFlag = true;
         if (!BTcontrol) BTcontrol = !isColorEffect(effect);     // При установке эффекта дыхание / цвета / радуга пикс - переключаться в управление по BT не нужно
-        if (!isColorEffect(effect)) drawingFlag = false;
+        if (!isColorEffect(effect)) {
+          drawingFlag = false;
+          runningFlag = false;
+        }
         
         effectSpeed = getEffectSpeed(effect);
         effectTimer.setInterval(effectSpeed);
@@ -344,9 +349,10 @@ void parsing() {
         effectSpeed = getEffectSpeed(effect);
         effectTimer.setInterval(effectSpeed);
 
-        // intData[1] = 0 - выбор эффекта intData[1] = 1 - старт/стоп
-        // intData[3] = 0 - стоп intData[3] = 1 - старт
-        effectsFlag = intData[1] == 1 && intData[3] == 1; 
+        // intData[1] : дейстие -> 0 - выбор эффекта  = 1 - старт/стоп
+        // intData[2] : номер эффекта
+        // intData[3] : 0 - стоп 1 - старт
+        effectsFlag = intData[1] == 0 || (intData[1] == 1 && intData[3] == 1); // выбор эффекта - сразу запускать
         
         // Найти соответствие thisMode указанному эффекту. 
         // Дльнейшее отображение изображения эффекта будет выполняться стандартной процедурой customRoutin()
@@ -376,7 +382,7 @@ void parsing() {
         runningFlag = false;
         controlFlag = false;                      // Посе начала игры пока не трогаем кнопки - игра автоматическая 
         drawingFlag = false;
-        gameFlag = true;
+        gamemodeFlag = true;
         gamePaused = true;
         game = intData[1];
         
@@ -394,7 +400,6 @@ void parsing() {
         BTcontrol = true;        
         buttons = 0;
         controlFlag = true;
-        gameFlag = true;
         gamePaused = false;
         sendAcknowledge();
         break;
@@ -402,7 +407,6 @@ void parsing() {
         BTcontrol = true;
         buttons = 1;
         controlFlag = true;
-        gameFlag = true;
         gamePaused = false;
         sendAcknowledge();
         break;
@@ -410,7 +414,6 @@ void parsing() {
         BTcontrol = true;
         buttons = 2;
         controlFlag = true;
-        gameFlag = true;
         gamePaused = false;
         sendAcknowledge();
         break;
@@ -418,20 +421,27 @@ void parsing() {
         BTcontrol = true;
         buttons = 3;
         controlFlag = true;
-        gameFlag = true;
         gamePaused = false;
         sendAcknowledge();
         break;
       case 14:
         BTcontrol = true;
-        if (!gameFlag || runningFlag) {
-          loadingFlag = true;    
-          FastLED.clear(); 
-          FastLED.show(); 
+        b_tmp = mapGameToMode(game);
+        if (b_tmp != 255) {
+          thisMode = b_tmp;
+          if (!drawingFlag || (drawingFlag && game != 0) || runningFlag) {        // начать новую игру при переходе со всех режимов кроме рисования
+            loadingFlag = true;                                                   // если игра в паузе змейка - продолжить, иначе начать  новую игру 
+            FastLED.clear(); 
+            FastLED.show(); 
+          }
+          effectsFlag = false;
+          drawingFlag = false;
+          runningFlag = false;
+          gamemodeFlag = true;
+          gamePaused = intData[1] == 0;  
+          gameSpeed = getGameSpeed(game);
+          gameTimer.setInterval(gameSpeed);        
         }
-        gameFlag = true;
-        effectsFlag = false;
-        gamePaused = intData[1] == 0;  
         sendAcknowledge();
         break;
       case 15: 
@@ -468,7 +478,7 @@ void parsing() {
           runningFlag = false;
           controlFlag = false;      // После начала игры пока не трогаем кнопки - игра автоматическая 
           drawingFlag = false;
-          gameFlag = false;
+          gamemodeFlag = false;
           gamePaused = false;
           loadingFlag = true;       // если false - при переключении с эффекта бегущий текст на демо-режим "бегущий текст" текст демо режима не сначала, а с позиции где бежал текст эффекта
                                     // если true - текст начинает бежать сначала, потом плавно затухает на смену режима и потом опять начинает сначала.
@@ -492,7 +502,7 @@ void parsing() {
         autoplayTime = ((long)intData[1] * 1000);
         idleTime = ((long)intData[2] * 1000);
         saveAutoplayTime(autoplayTime);
-        saveIdleTime(autoplayTime);
+        saveIdleTime(idleTime);
         idleState = !BTcontrol && AUTOPLAY; 
         if (AUTOPLAY) {
           autoplayTimer = millis();
@@ -512,15 +522,47 @@ void parsing() {
         }
         break;
       case 19: 
-        switch (intData[1]) {
+#if (USE_CLOCK == 1)
+         switch (intData[1]) {
            case 0:               // $19 0 N X; - сохранить настройку X "Часы в эффекте" для эффекта N
              saveEffectClock(intData[2], intData[3] == 1);
              break;
            case 1:               // $19 1 X; - сохранить настройку X "Часы в эффектах"
              saveClockOverlayEnabled(intData[2] == 1);
              break;
+           case 2:               // $19 2 X; - Использовать синхронизацию часов NTP  X: 0 - нет, 1 - да
+             useNtp = intData[2] == 1;
+             saveUseNtp(useNtp);
+             init_time = 0; ntp_t = 0;
+             break;
+           case 3:               // $19 3 N Z; - Период синхронизации часов NTP и Часовой пояс
+             SYNC_TIME_PERIOD = intData[2];
+             timeZoneOffset = (int8_t)intData[3];
+             saveTimeZone(timeZoneOffset);
+             saveNtpSyncTime(SYNC_TIME_PERIOD);
+             saveTimeZone(timeZoneOffset);
+             ntpTimer.setInterval(1000 * 60 * SYNC_TIME_PERIOD);
+             init_time = 0; ntp_t = 0;
+             break;
+           case 4:               // $19 4 X; - Ориентация часов  X: 0 - горизонтально, 1 - вертикально
+             CLOCK_ORIENT = intData[2] == 1 ? 1  : 0;
+             if (CLOCK_ORIENT == 0) {
+               CLOCK_X = 0;           // позиция часов по X (начало координат - левый нижний угол)
+               CLOCK_Y = 6;           // позиция часов по Y (начало координат - левый нижний угол)
+             } else {
+               CLOCK_X = 5;           // позиция часов по X (начало координат - левый нижний угол)
+               CLOCK_Y = 3;           // позиция часов по Y (начало координат - левый нижний угол)
+             }
+             saveClockOrientation(CLOCK_ORIENT);
+             break;
+           case 5:               // $19 5 X; - Режим цвета часов  X: 0 - горизонтально, 1 - вертикально
+             COLOR_MODE = intData[2];
+             if (COLOR_MODE > 3) COLOR_MODE = 0;
+             saveClockColorMode(COLOR_MODE);
+             break;
         }
         sendAcknowledge();
+#endif        
         break;
     }
     lastMode = intData[0];  // запомнить предыдущий режим
@@ -594,6 +636,7 @@ void parsing() {
             pictureLine = String(&incomeBuffer[bufIdx]);
           } if (intData[0] == 6) {  // текст бегщей строки
             runningText = String(&incomeBuffer[bufIdx]);
+            runningText.trim();
           }
                     
           incomingByte = ending;                       // сразу завершаем парс
@@ -698,6 +741,10 @@ void sendPageParams(int page) {
   // GS:Х       состояние игры, где Х = 0 - выкл; 1 - вкл
   // SG:число   скорость игры
   // CE:X       оверлей часов вкл/выкл, где Х = 0 - выкл; 1 - вкл
+  // CС:X       режим цвета часов: 0,1,2
+  // NP:Х       использовать NTP, где Х = 0 - выкл; 1 - вкл
+  // NT:число   период синхронизации NTP в минутах
+  // NZ:число   часовой пояс -12..+12
   String str = "", color, text;
   boolean allowed;
   byte b_tmp;
@@ -706,7 +753,7 @@ void sendPageParams(int page) {
       str="$18 W:"+String(WIDTH)+";H:"+String(HEIGHT)+";DM:";
       if (BTcontrol) str+="0;AP:"; else str+="1;AP:";
       if (AUTOPLAY)  str+="1;BR:"; else str+="0;BR:";
-      str+=String(globalBrightness) + ";PD:" + String(autoplayTime / 1000) + ";IT:" + String(idleTime / 1000) + ";";
+      str+=String(globalBrightness) + ";PD:" + String(autoplayTime / 1000) + ";IT:" + String(idleTime / 1000) +  ";";
       break;
     case 2:  // Рисование. Вернуть: Яркость; Цвет точки;
       color = ("000000" + String(globalColor, HEX));
@@ -725,6 +772,7 @@ void sendPageParams(int page) {
       break;
     case 5:  // Эффекты. Вернуть: Номер эффекта, Остановлен или играет; Яркость; Скорость эффекта; Оверлей часов 
       allowed = false;
+#if (USE_CLOCK == 1)      
       b_tmp = mapEffectToMode(effect);
       if (b_tmp != 255) {
         for (byte i = 0; i < sizeof(overlayList); i++) {
@@ -732,21 +780,30 @@ void sendPageParams(int page) {
           if (allowed) break;
         }
       }
+#endif      
       str="$18 EF:"+String(effect+1) + ";ES:";
       if (effectsFlag)  str+="1;BR:"; else str+="0;BR:";
       str+=String(globalBrightness) + ";SE:" + String(constrain(map(effectSpeed, D_EFFECT_SPEED_MIN,D_EFFECT_SPEED_MAX, 0, 255), 0,255));
+#if (USE_CLOCK == 1)      
       if (isColorEffect(effect) || !allowed || effect == 9) 
           str+=";EC:X;";  // X - параметр не используется (неприменим)
       else    
           str+=";EC:" + String(getEffectClock(effect)) + ";";
+#else
+      str+=";EC:X;";  // X - параметр не используется (неприменим)
+#endif      
       break;
     case 6:  // Игры. Вернуть: Номер игры; Вкл.выкл; Яркость; Скорость игры
       str="$18 GM:"+String(game+1) + ";GS:";
-      if (gameFlag && !gamePaused)  str+="1;BR:"; else str+="0;BR:";
+      if (gamemodeFlag && !gamePaused)  str+="1;BR:"; else str+="0;BR:";
       str+=String(globalBrightness) + ";SG:" + String(constrain(map(gameSpeed, D_GAME_SPEED_MIN,D_GAME_SPEED_MAX, 0, 255), 0,255)) + ";"; 
       break;
     case 7:  // Настройки часов. Вернуть: Оверлей вкл/выкл
-      str="$18 CE:"+String(getClockOverlayEnabled()) + ";";
+#if (USE_CLOCK == 1)      
+      str="$18 CE:"+String(getClockOverlayEnabled()) + ";NP:";
+      if (useNtp)  str+="1;NT:"; else str+="0;NT:";
+      str+=String(SYNC_TIME_PERIOD) + ";NZ:" + String(timeZoneOffset) + ";CC:" + String(COLOR_MODE) + ";";
+#endif      
       break;
   }
   
@@ -814,6 +871,12 @@ bool isColorEffect(byte effect) {
   // Они могут работать с custom демо режимами
   return (effect >= 0 && effect <= 1) || effect == 5;
 }
+
+#else
+void bluetoothRoutine() {
+  customRoutine();
+}
+#endif
 
 byte mapEffectToMode(byte effect) {
   byte tmp_mode = 255;
@@ -944,10 +1007,3 @@ byte mapModeToGame(byte aMode) {
   }
   return tmp_game;
 }
-
-
-#else
-void bluetoothRoutine() {
-  customRoutine();
-}
-#endif

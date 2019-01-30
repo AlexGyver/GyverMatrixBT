@@ -22,7 +22,6 @@ void fillString(String text, uint32_t color) {
     modeCode = MC_TEXT;
     fullTextFlag = false;
   }
-  
   if (scrollTimer.isReady()) {
     FastLED.clear();
     byte i = 0, j = 0;

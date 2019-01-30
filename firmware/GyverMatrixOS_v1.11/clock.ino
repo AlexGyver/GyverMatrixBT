@@ -1,19 +1,9 @@
 // режим часов
 
+#if (USE_CLOCK == 1)
+
 // ****************** НАСТРОЙКИ ЧАСОВ *****************
 #define OVERLAY_CLOCK 1     // часы на фоне всех эффектов и игр. Жрёт SRAM память!
-#define CLOCK_ORIENT 0      // 0 горизонтальные, 1 вертикальные
-#if (CLOCK_ORIENT == 0)
-#define CLOCK_X 0           // позиция часов по X (начало координат - левый нижний угол)
-#define CLOCK_Y 6           // позиция часов по Y (начало координат - левый нижний угол)
-#else
-#define CLOCK_X 5           // позиция часов по X (начало координат - левый нижний угол)
-#define CLOCK_Y 3           // позиция часов по Y (начало координат - левый нижний угол)
-#endif
-#define COLOR_MODE 0        // Режим цвета часов
-//                          0 - заданные ниже цвета
-//                          1 - радужная смена (каждая цифра)
-//                          2 - радужная смена (часы, точки, минуты)
 
 #define MIN_COLOR CRGB::White          // цвет минут
 #define HOUR_COLOR CRGB::White         // цвет часов
@@ -24,21 +14,18 @@
 #define HUE_GAP 30          // шаг цвета между цифрами в режиме радужной смены
 
 // ****************** ДЛЯ РАЗРАБОТЧИКОВ ****************
-bool overlayEnabled = getClockOverlayEnabled();
-byte listSize = sizeof(overlayList);
 CRGB contrastColor = CONTRAST_COLOR;
 byte clockHue;
 
-#if (OVERLAY_CLOCK == 1 && CLOCK_ORIENT == 0)
+#if (OVERLAY_CLOCK == 1)
 CRGB overlayLEDs[75];
-#elif (OVERLAY_CLOCK == 1 && CLOCK_ORIENT == 1)
-CRGB overlayLEDs[70];
 #endif
 
-#if (USE_CLOCK == 1)
+bool overlayEnabled = getClockOverlayEnabled();
+byte listSize = sizeof(overlayList);
 CRGB clockLED[5] = {HOUR_COLOR, HOUR_COLOR, DOT_COLOR, MIN_COLOR, MIN_COLOR};
 
-#if (WIFI_MODE == 1 && USE_CLOCK == 1)
+#if (WIFI_MODE == 1)
 // send an NTP request to the time server at the given address
 unsigned long sendNTPpacket(IPAddress& address) {
 #if (BT_MODE == 0)  
@@ -79,8 +66,6 @@ void parseNTP() {
     unsigned long secsSince1900 = highWord << 16 | lowWord;
     // Unix time starts on Jan 1 1970. In seconds, that's 2208988800:
     unsigned long seventyYears = 2208988800UL ;
-    //DateTime now = secsSince1900 - seventyYears + (timeZoneOffset + daylight) * 3600;
-    
     time_t t = secsSince1900 - seventyYears + (timeZoneOffset) * 3600;
 #if (BT_MODE == 0)  
     Serial.print("Seconds since 1970: ");
@@ -99,7 +84,6 @@ void getNTP() {
   // wait to see if a reply is available
   ntp_t = millis();
 }
-#endif
 
 boolean overlayAllowed() {
   // Оверлей разрешен общими настройками часов?
@@ -175,36 +159,36 @@ void drawClock(byte hrs, byte mins, boolean dots, byte X, byte Y) {
     hrs = hour();
     mins = minute();
   }
-#if (CLOCK_ORIENT == 0)
-  if (hrs > 9) drawDigit3x5(hrs / 10, X, Y, clockLED[0]);
-  drawDigit3x5(hrs % 10, X + 4, Y, clockLED[1]);
-  if (dots) {
-    drawPixelXY(X + 7, Y + 1, clockLED[2]);
-    drawPixelXY(X + 7, Y + 3, clockLED[2]);
-  } else {
-    if (modeCode == MC_CLOCK) {
-      drawPixelXY(X + 7, Y + 1, 0);
-      drawPixelXY(X + 7, Y + 3, 0);
+  if (CLOCK_ORIENT == 0) {
+    if (hrs > 9) drawDigit3x5(hrs / 10, X + (hrs / 10 == 1 ? 1 : 0), Y, clockLED[0]); // шрифт 3x5 в котором 1 - по центру знакоместа - смещать вправо на 1 колонку
+    drawDigit3x5(hrs % 10, X + 4, Y, clockLED[1]);
+    if (dots) {
+      drawPixelXY(X + 7, Y + 1, clockLED[2]);
+      drawPixelXY(X + 7, Y + 3, clockLED[2]);
+    } else {
+      if (modeCode == MC_CLOCK) {
+        drawPixelXY(X + 7, Y + 1, 0);
+        drawPixelXY(X + 7, Y + 3, 0);
+      }
     }
-  }
-  drawDigit3x5(mins / 10, X + 8, Y, clockLED[3]);
-  drawDigit3x5(mins % 10, X + 12, Y, clockLED[4]);
-#else // Вертикальные часы
-  //if (hrs > 9) // Так реально красивей
-  drawDigit3x5(hrs / 10, X, Y + 6, clockLED[0]);
-  drawDigit3x5(hrs % 10, X + 4, Y + 6, clockLED[1]);
-  if (dots) { // Мигающие точки легко ассоциируются с часами
-    drawPixelXY(X + 1, Y + 5, clockLED[2]);
-    drawPixelXY(X + 5, Y + 5, clockLED[2]);
-  } else {
-    if (modeCode == MC_CLOCK) {
-      drawPixelXY(X + 1, Y + 5, 0);
-      drawPixelXY(X + 5, Y + 5, 0);
+    drawDigit3x5(mins / 10, X + 8, Y, clockLED[3]);
+    drawDigit3x5(mins % 10, X + 12 + (mins % 10 == 1 ? -1 : 0), Y, clockLED[4]); // шрифт 3x5 в котором 1 - по центру знакоместа - смещать влево на 1 колонку
+  } else { // Вертикальные часы
+    //if (hrs > 9) // Так реально красивей
+    drawDigit3x5(hrs / 10, X, Y + 6, clockLED[0]);
+    drawDigit3x5(hrs % 10, X + 4, Y + 6, clockLED[1]);
+    if (dots) { // Мигающие точки легко ассоциируются с часами
+      drawPixelXY(X + 1, Y + 5, clockLED[2]);
+      drawPixelXY(X + 5, Y + 5, clockLED[2]);
+    } else {
+      if (modeCode == MC_CLOCK) {
+        drawPixelXY(X + 1, Y + 5, 0);
+        drawPixelXY(X + 5, Y + 5, 0);
+      }
     }
+    drawDigit3x5(mins / 10, X, Y, clockLED[3]);
+    drawDigit3x5(mins % 10, X + 4, Y, clockLED[4]);
   }
-  drawDigit3x5(mins / 10, X, Y, clockLED[3]);
-  drawDigit3x5(mins % 10, X + 4, Y, clockLED[4]);
-#endif
 }
 
 void clockRoutine() {
@@ -272,8 +256,8 @@ void clockRoutine() {
 }
 #endif
 
-#if (CLOCK_ORIENT == 0 && USE_CLOCK == 1 && OVERLAY_CLOCK == 1)
-void clockOverlayWrap(byte posX, byte posY) {
+#if (OVERLAY_CLOCK == 1)
+void clockOverlayWrapH(byte posX, byte posY) {
   byte thisLED = 0;
   for (byte i = posX; i < posX + 15; i++) {
     for (byte j = posY; j < posY + 5; j++) {
@@ -285,7 +269,7 @@ void clockOverlayWrap(byte posX, byte posY) {
   drawClock(hrs, mins, dotFlag, posX, posY);
 }
 
-void clockOverlayUnwrap(byte posX, byte posY) {
+void clockOverlayUnwrapH(byte posX, byte posY) {
   byte thisLED = 0;
   for (byte i = posX; i < posX + 15; i++) {
     for (byte j = posY; j < posY + 5; j++) {
@@ -295,8 +279,7 @@ void clockOverlayUnwrap(byte posX, byte posY) {
   }
 }
 
-#elif (CLOCK_ORIENT == 1 && USE_CLOCK == 1 && OVERLAY_CLOCK == 1)
-void clockOverlayWrap(byte posX, byte posY) {
+void clockOverlayWrapV(byte posX, byte posY) {
   byte thisLED = 0;
   for (byte i = posX; i < posX + 7; i++) {
     for (byte j = posY; j < posY + 10; j++) {
@@ -308,7 +291,7 @@ void clockOverlayWrap(byte posX, byte posY) {
   drawClock(hrs, mins, dotFlag, posX, posY);
 }
 
-void clockOverlayUnwrap(byte posX, byte posY) {
+void clockOverlayUnwrapV(byte posX, byte posY) {
   byte thisLED = 0;
   for (byte i = posX; i < posX + 7; i++) {
     for (byte j = posY; j < posY + 10; j++) {
@@ -317,9 +300,7 @@ void clockOverlayUnwrap(byte posX, byte posY) {
     }
   }
 }
-#endif
 
-#if (OVERLAY_CLOCK == 1 && USE_CLOCK == 1)
 boolean needUnwrap() {
   if (modeCode == MC_SNOW ||
       modeCode == MC_SPARKLES ||
@@ -364,13 +345,26 @@ void setOverlayColors() {
 }
 
 #else
-void clockOverlayWrap(byte posX, byte posY) {
+
+void clockOverlayWrapH(byte posX, byte posY) {
   return;
 }
-void clockOverlayUnwrap(byte posX, byte posY) {
+void clockOverlayUnwrapH(byte posX, byte posY) {
+  return;
+}
+void clockOverlayWrapV(byte posX, byte posY) {
+  return;
+}
+void clockOverlayUnwrapV(byte posX, byte posY) {
   return;
 }
 boolean needUnwrap() {
   return true;
 }
+#endif
+
+#else
+
+void clockRoutine() { }
+
 #endif

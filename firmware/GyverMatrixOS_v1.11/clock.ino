@@ -3,8 +3,6 @@
 #if (USE_CLOCK == 1)
 
 // ****************** НАСТРОЙКИ ЧАСОВ *****************
-#define OVERLAY_CLOCK 1     // часы на фоне всех эффектов и игр. Жрёт SRAM память!
-
 #define MIN_COLOR CRGB::White          // цвет минут
 #define HOUR_COLOR CRGB::White         // цвет часов
 #define DOT_COLOR CRGB::White          // цвет точек
@@ -19,13 +17,13 @@ byte clockHue;
 
 #if (OVERLAY_CLOCK == 1)
 CRGB overlayLEDs[75];
+byte listSize = sizeof(overlayList);
 #endif
 
 bool overlayEnabled = getClockOverlayEnabled();
-byte listSize = sizeof(overlayList);
 CRGB clockLED[5] = {HOUR_COLOR, HOUR_COLOR, DOT_COLOR, MIN_COLOR, MIN_COLOR};
 
-#if (WIFI_MODE == 1)
+#if (USE_WIFI == 1)
 // send an NTP request to the time server at the given address
 unsigned long sendNTPpacket(IPAddress& address) {
 #if (BT_MODE == 0)  
@@ -85,7 +83,10 @@ void getNTP() {
   ntp_t = millis();
 }
 
+#endif
+
 boolean overlayAllowed() {
+#if (OVERLAY_CLOCK == 1)  
   // Оверлей разрешен общими настройками часов?
   bool allowed = getClockOverlayEnabled();
   // Оверлей разрешен настройками списка разрешенных для оверлея эффектов?
@@ -95,16 +96,15 @@ boolean overlayAllowed() {
       if (allowed) break;
     }
   }
+  #if (BT_MODE == 1 || USE_WIFI == 1)  
 
-#if (BT_MODE == 1 || WIFI_MODE == 1)  
-
-  // Эффекты Дыхание, Цвета, Радуга пикс. и Часы, a также функция isColorEffect() есть только при включенных опциях BT_MODE или WIFI_MODE
+  // Эффекты Дыхание, Цвета, Радуга пикс. и Часы, a также функция isColorEffect() есть только при включенных опциях BT_MODE или USE_WIFI
   // Оверлей разрешен настройками параметров эффекта? (в эффектах Дыхание, Цвета, Радуга пикс. и Часы оверлей часов не разрешен)
   if (allowed && BTcontrol && effectsFlag && !(isColorEffect(effect) || effect == MC_CLOCK)) {
     allowed = getEffectClock(effect);   
   }
   
-#endif
+  #endif
   
   // Если в режиме авто - найти соответствие номера отображаемого режима номеру эффекта и проверить - разрешен ли для него оверлей часов
   if (allowed && !BTcontrol) {
@@ -114,15 +114,18 @@ boolean overlayAllowed() {
   }
 
   return allowed;
+#else
+  return false;
+#endif
 }
 
 String clockCurrentText() {
-
+  
 #if (USE_RTC == 1 && (MCU_TYPE == 0 || MCU_TYPE == 1))
     DateTime now = rtc.now();
     hrs = now.hour();
     mins = now.minute();
-#else if (MCU_TYPE == 1) 
+#elif (MCU_TYPE == 1) 
     hrs = hour();
     mins = minute();
 #endif
@@ -155,10 +158,11 @@ void clockColor() {
 
 // нарисовать часы
 void drawClock(byte hrs, byte mins, boolean dots, byte X, byte Y) {
-  if  (MCU_TYPE == 1) {
-    hrs = hour();
-    mins = minute();
-  }
+#if (MCU_TYPE == 1) 
+  hrs = hour();
+  mins = minute();
+#endif
+  
   if (CLOCK_ORIENT == 0) {
     if (hrs > 9) drawDigit3x5(hrs / 10, X + (hrs / 10 == 1 ? 1 : 0), Y, clockLED[0]); // шрифт 3x5 в котором 1 - по центру знакоместа - смещать вправо на 1 колонку
     drawDigit3x5(hrs % 10, X + 4, Y, clockLED[1]);
@@ -220,7 +224,10 @@ void clockRoutine() {
 void clockTicker() {
   if (halfsecTimer.isReady()) {
     clockHue += HUE_STEP;
+
+#if (OVERLAY_CLOCK == 1)
     setOverlayColors();
+#endif
 
     dotFlag = !dotFlag;
 // С библиотекой OldTime "закат солнца вручную" не нужен )
@@ -231,14 +238,16 @@ void clockTicker() {
         secs = 0;
         mins++;
 
-#if (USE_RTC == 1 && (MCU_TYPE == 0 || MCU_TYPE == 1))
+  #if (USE_RTC == 1 && (MCU_TYPE == 0 || MCU_TYPE == 1))
         DateTime now = rtc.now();
+    #if (MCU_TYPE == 1)        
         time_t t = now; // Устанавливаем время в библиотеке OldTimer
         setTime(t);
+    #endif
         secs = now.second();
         mins = now.minute();
         hrs = now.hour();
-#endif
+  #endif
       }
       if (mins > 59) {      // каждый час
         mins = 0;
@@ -249,12 +258,6 @@ void clockTicker() {
 #endif
   }
 }
-
-#else
-void clockRoutine() {
-  return;
-}
-#endif
 
 #if (OVERLAY_CLOCK == 1)
 void clockOverlayWrapH(byte posX, byte posY) {

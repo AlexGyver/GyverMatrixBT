@@ -1,20 +1,30 @@
 // вкладка работы с bluetooth
 
-#if (BT_MODE == 1 || WIFI_MODE == 1)
+#if (BT_MODE == 1 || USE_WIFI == 1)
 #define PARSE_AMOUNT 4       // максимальное количество значений в массиве, который хотим получить
 #define header '$'           // стартовый символ
 #define divider ' '          // разделительный символ
 #define ending ';'           // завершающий символ
 
-int16_t intData[PARSE_AMOUNT];  // массив численных значений после парсинга
+#if (USE_WIFI == 1)
+int16_t intData[PARSE_AMOUNT];  // массив численных значений после парсинга - для WiFi часы время синхр м.б отрицательным + 
+                                // период синхронизации м.б больше 255 сек - нужен тип int16_t В MCU_TYPE == 1 памяти много, можно не экономить
+#else                           // в ардуино TZ и ТЕЗ yt используются - принимаемые значения байты - экономим память
+byte intData[PARSE_AMOUNT];     // массив численных значений после парсинга
+#endif
+
 uint32_t prevColor;
 boolean recievedFlag;
 byte lastMode = 0;
 boolean parseStarted;
 String pictureLine;
 
-char incomeBuffer[UDP_TX_PACKET_MAX_SIZE];      // Буфер для приема строки команды из wifi udp сокета
-char replyBuffer[20];                           // ответ WiFi-клиенту - подтверждения получения команды
+#if (USE_WIFI==1)
+char incomeBuffer[UDP_TX_PACKET_MAX_SIZE];        // Буфер для приема строки команды из wifi udp сокета
+#else
+char incomeBuffer[32];                            // Буфер для приема строки команды из BT-соединения
+#endif
+char replyBuffer[7];                              // ответ клиенту - подтверждения получения команды: "ack;/r/n/0"
 
 unsigned long ackCounter = 0;
 
@@ -24,7 +34,7 @@ void bluetoothRoutine() {
   // на время принятия данных матрицу не обновляем!
   if (!parseStarted) {                          
 
-    #if (MCU_TYPE == 1 && WIFI_MODE == 1 && (USE_CLOCK == 1 || GET_WEATHER == 1))
+    #if (MCU_TYPE == 1 && USE_WIFI == 1 && (USE_CLOCK == 1 || GET_WEATHER == 1))
       if (WifiTimer.isReady() && wifi_connected) {
   
         #if (USE_CLOCK == 1)    
@@ -141,16 +151,20 @@ bool fromWiFi = false;
 bool fromBT = false;
 bool haveIncomeData = false;
 char incomingByte;
-int  bufIdx = 0;
+
+#if (MCU_TYPE == 1)
+int  bufIdx = 0;         // В MCU_TYPE == 1 могут приниматься пакеты > 255 байт
 int  packetSize = 0;
+#else
+byte  bufIdx = 0;
+byte  packetSize = 0;
+#endif
 
 // разбор строки картинки - команда $5
 char *pch;
 int pntX, pntY, pntColor, pntIdx;
 char buf[14];               // точка картинки FFFFFF XXX YYY
 String pntPart[WIDTH];      // массив разобранной входной строки на строки точек
-
-
 
 // ********************* ПРИНИМАЕМ ДАННЫЕ **********************
 void parsing() {
@@ -300,7 +314,8 @@ void parsing() {
           Serial.println(str);
         }
 #endif
-#if (WIFI_MODE == 1)
+
+#if (USE_WIFI == 1)
         if (fromWiFi) { 
           str.toCharArray(incomeBuffer, str.length()+1);    
           udp.beginPacket(udp.remoteIP(), udp.remotePort());
@@ -531,11 +546,14 @@ void parsing() {
              saveClockOverlayEnabled(intData[2] == 1);
              break;
            case 2:               // $19 2 X; - Использовать синхронизацию часов NTP  X: 0 - нет, 1 - да
+#if (USE_WIFI == 1)
              useNtp = intData[2] == 1;
              saveUseNtp(useNtp);
              init_time = 0; ntp_t = 0;
+#endif             
              break;
            case 3:               // $19 3 N Z; - Период синхронизации часов NTP и Часовой пояс
+#if (USE_WIFI == 1)
              SYNC_TIME_PERIOD = intData[2];
              timeZoneOffset = (int8_t)intData[3];
              saveTimeZone(timeZoneOffset);
@@ -543,6 +561,7 @@ void parsing() {
              saveTimeZone(timeZoneOffset);
              ntpTimer.setInterval(1000 * 60 * SYNC_TIME_PERIOD);
              init_time = 0; ntp_t = 0;
+#endif             
              break;
            case 4:               // $19 4 X; - Ориентация часов  X: 0 - горизонтально, 1 - вертикально
              CLOCK_ORIENT = intData[2] == 1 ? 1  : 0;
@@ -571,7 +590,7 @@ void parsing() {
   // ****************** ПАРСИНГ *****************
   haveIncomeData = false;
 
-#if (WIFI_MODE == 1)
+#if (USE_WIFI == 1)
   if (!haveIncomeData) {
 
     // Если предыдущий буфер еще не разобран - новых данных из сокета не читаем, продолжаем разбор уже считанного буфера
@@ -772,7 +791,7 @@ void sendPageParams(int page) {
       break;
     case 5:  // Эффекты. Вернуть: Номер эффекта, Остановлен или играет; Яркость; Скорость эффекта; Оверлей часов 
       allowed = false;
-#if (USE_CLOCK == 1)      
+#if (USE_CLOCK == 1 && OVERLAY_CLOCK == 1)      
       b_tmp = mapEffectToMode(effect);
       if (b_tmp != 255) {
         for (byte i = 0; i < sizeof(overlayList); i++) {
@@ -800,9 +819,13 @@ void sendPageParams(int page) {
       break;
     case 7:  // Настройки часов. Вернуть: Оверлей вкл/выкл
 #if (USE_CLOCK == 1)      
-      str="$18 CE:"+String(getClockOverlayEnabled()) + ";NP:";
+      str="$18 CE:"+String(getClockOverlayEnabled()) + ";CC:" + String(COLOR_MODE)
+#if (USE_WIFI == 1)      
+      + ";NP:"; 
       if (useNtp)  str+="1;NT:"; else str+="0;NT:";
-      str+=String(SYNC_TIME_PERIOD) + ";NZ:" + String(timeZoneOffset) + ";CC:" + String(COLOR_MODE) + ";";
+      str+=String(SYNC_TIME_PERIOD) + ";NZ:" + String(timeZoneOffset)  
+#endif      
+      + ";";
 #endif      
       break;
   }
@@ -814,7 +837,7 @@ void sendPageParams(int page) {
     // После отправки команды из Андроид-программы, она ждет подтверждения получения - ответ "ack;"
     Serial.println(str);
 #endif
-#if (WIFI_MODE == 1)
+#if (USE_WIFI == 1)
     str.toCharArray(incomeBuffer, str.length()+1);    
     udp.beginPacket(udp.remoteIP(), udp.remotePort());
     udp.write(incomeBuffer);
@@ -833,7 +856,7 @@ void sendAcknowledge() {
     Serial.println("ack" + String(ackCounter++) + ";\r\n");
   }
 #endif
-#if (WIFI_MODE == 1)
+#if (USE_WIFI == 1)
   // Если данные были получены по WiFi - отправить подтверждение, чтобы клиентский сокет прервал ожидание
   if (fromWiFi) {
     String reply = "ack" + String(ackCounter++) + ";\r\n";

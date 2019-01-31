@@ -480,7 +480,7 @@ void btnsModeChange() {
         nextMode();
       } else {
 #if (USE_CLOCK == 1 && USE_RTC == 1)        
-  #if (WIFI_MODE == 1)
+  #if (USE_WIFI == 1)
         adjustTime(60);
   #else
         timeSet(1, 1);
@@ -495,7 +495,7 @@ void btnsModeChange() {
         prevMode();
       } else {
 #if (USE_CLOCK == 1 && USE_RTC == 1)        
-  #if (WIFI_MODE == 1)
+  #if (USE_WIFI == 1)
         adjustTime(-60);
   #else
         timeSet(1, 0);
@@ -510,7 +510,7 @@ void btnsModeChange() {
         autoplayTimer = millis();
       } else {
 #if (USE_CLOCK == 1 && USE_RTC == 1)        
-  #if (WIFI_MODE == 1)
+  #if (USE_WIFI == 1)
         adjustTime(3600);
   #else
         timeSet(0, 1);
@@ -523,7 +523,7 @@ void btnsModeChange() {
         AUTOPLAY = false;
       } else {
 #if (USE_CLOCK == 1 && USE_RTC == 1)        
-  #if (WIFI_MODE == 1)
+  #if (USE_WIFI == 1)
         adjustTime(-3600);
   #else
         timeSet(0, 0);
@@ -553,7 +553,7 @@ void btnsModeChange() {
           }
         } else {
 #if (USE_CLOCK == 1 && USE_RTC == 1)        
-  #if (WIFI_MODE == 1)
+  #if (USE_WIFI == 1)
           adjustTime(60);
   #else
           timeSet(1, 1);
@@ -582,7 +582,7 @@ void btnsModeChange() {
           }
         } else {
 #if (USE_CLOCK == 1 && USE_RTC == 1)        
-  #if (WIFI_MODE == 1)
+  #if (USE_WIFI == 1)
           adjustTime(-60);
   #else
           timeSet(1, 0);
@@ -599,7 +599,7 @@ void btnsModeChange() {
           FastLED.setBrightness(globalBrightness);
         } else {
 #if (USE_CLOCK == 1 && USE_RTC == 1)        
-  #if (WIFI_MODE == 1)
+  #if (USE_WIFI == 1)
           adjustTime(3600);
   #else
           timeSet(0, 1);
@@ -616,7 +616,7 @@ void btnsModeChange() {
           FastLED.setBrightness(globalBrightness);
         } else {
 #if (USE_CLOCK == 1 && USE_RTC == 1)        
-  #if (WIFI_MODE == 1)
+  #if (USE_WIFI == 1)
           adjustTime(-3600);
   #else
           timeSet(0, 0);

@@ -76,8 +76,6 @@ const uint16_t frame03[] PROGMEM = {
   0x0000, 0x0000, 0x48C0, 0x48C0, 0x48C0, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
 };
 
-const uint16_t* framesArray[] PROGMEM = {frame00, frame01, frame02, frame03};
-
 // ------------------- Загрузка картинок и фреймов анимации ------------------- 
 // Данный пример работает при размере матрицы 16x16 - такие картинки подготовлены в этом файле
 // для других размеров матрицы - подготовьте собственные картинки
@@ -111,11 +109,24 @@ void animation() {
     loadingFlag = false;
     modeCode = MC_IMAGE;
   }
-  bool isReady = BTcontrol || gifTimer.isReady();
+  bool isReady = gifTimer.isReady();
   if (isReady) {
     frameNum++;
-    if (frameNum >= sizeof(framesArray)/sizeof(uint16_t*)) frameNum = 0;
-    loadImage(framesArray[frameNum]);
+    if (frameNum >= 4) frameNum = 0;
+    switch (frameNum) {
+      case 0:
+        loadImage(frame00);
+        break;
+      case 1:
+        loadImage(frame01);
+        break;
+      case 2:
+        loadImage(frame02);
+        break;
+      case 3:
+        loadImage(frame03);
+        break;
+    }
   }  
 }
 

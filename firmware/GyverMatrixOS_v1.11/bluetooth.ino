@@ -273,8 +273,10 @@ void parsing() {
         drawingFlag = true;
         loadingFlag = false;
 
-        // строка картинки - в pictureLine в формате Y colorHEX X|colorHEX X|...|colorHEX X
+        // строка картинки - в pictureLine в формате:  для UDP:  'Y colorHEX X|colorHEX X|...|colorHEX X'
+        //                                             для BT будет один пакет 'Y colorHEX X' из за ограничения размера приемного буфера
 
+        // Получить номер строки (Y) для которой получили строку с данными 
         b_tmp = pictureLine.indexOf(" ");
         str = pictureLine.substring(0, b_tmp);
         pntY = str.toInt();
@@ -289,7 +291,7 @@ void parsing() {
           pch = strtok (NULL, "|");
         }
         
-        for (int i=0; i<WIDTH; i++) {
+        for (int i=0; i<pntIdx; i++) {
           str = pntPart[i];
           str.toCharArray(buf, str.length()+1);
 
@@ -303,11 +305,14 @@ void parsing() {
           
           drawPixelXY(pntX, pntY, gammaCorrection(pntColor));
         }
-        FastLED.show();
+
+        // Выводить построчно для ускорения вывода на экран
+        if (pntX == WIDTH - 1)
+          FastLED.show();
 
         // Подтвердить прием строки изображения
-        str = "$5 " + String(pntY) + " ack" + String(ackCounter++) + ";\r\n";
-        
+        str = "$5 " + String(pntY)+ "-" + String(pntX) + " ack" + String(ackCounter++) + ";\r\n";
+
 #if (BT_MODE == 1)
         // После отправки команды из Андроид-программы, она ждет подтверждения получения"
         if (fromBT) {
@@ -514,8 +519,8 @@ void parsing() {
         
         break;
       case 17: 
-        autoplayTime = ((long)intData[1] * 1000);
-        idleTime = ((long)intData[2] * 1000);
+        autoplayTime = ((long)intData[1] * 1000);   // секунды -> миллисек 
+        idleTime = ((long)intData[2] * 60 * 1000);  // минуты -> миллисек
         saveAutoplayTime(autoplayTime);
         saveIdleTime(idleTime);
         idleState = !BTcontrol && AUTOPLAY; 
@@ -523,8 +528,11 @@ void parsing() {
           autoplayTimer = millis();
         }
         if (idleState) {
-          gameTimer.setInterval(idleTime);
-          gameTimer.reset();
+          if (idleTime == 0) // тамймер отключен
+            idleTimer.setInterval(4294967295);
+          else
+            idleTimer.setInterval(idleTime);
+          idleTimer.reset();
         }
         sendAcknowledge();
         break;
@@ -772,7 +780,7 @@ void sendPageParams(int page) {
       str="$18 W:"+String(WIDTH)+";H:"+String(HEIGHT)+";DM:";
       if (BTcontrol) str+="0;AP:"; else str+="1;AP:";
       if (AUTOPLAY)  str+="1;BR:"; else str+="0;BR:";
-      str+=String(globalBrightness) + ";PD:" + String(autoplayTime / 1000) + ";IT:" + String(idleTime / 1000) +  ";";
+      str+=String(globalBrightness) + ";PD:" + String(autoplayTime / 1000) + ";IT:" + String(idleTime / 60 / 1000) +  ";";
       break;
     case 2:  // Рисование. Вернуть: Яркость; Цвет точки;
       color = ("000000" + String(globalColor, HEX));

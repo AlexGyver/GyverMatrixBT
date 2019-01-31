@@ -38,8 +38,8 @@ void loadSettings() {
     effectSpeed = map(EEPROMread(3),0,255,D_EFFECT_SPEED_MIN,D_EFFECT_SPEED_MAX);
     gameSpeed = map(EEPROMread(4),0,255,D_GAME_SPEED_MIN,D_GAME_SPEED_MAX);   
     AUTOPLAY = EEPROMread(6) == 1;
-    autoplayTime = EEPROMread(7) * 1000;
-    idleTime = EEPROMread(8) * 1000;
+    autoplayTime = EEPROMread(7) * 1000;  // секунды -> миллисек 
+    idleTime = EEPROMread(8) * 60 * 1000; // минуты -> миллисек
 #if (USE_CLOCK == 1 && USE_WIFI == 1)      
     overlayEnabled = EEPROMread(5);
     useNtp = EEPROMread(9) == 1;
@@ -54,8 +54,8 @@ void loadSettings() {
     effectSpeed = D_EFFECT_SPEED;
     gameSpeed = D_GAME_SPEED;
     AUTOPLAY = true;
-    autoplayTime = ((long)AUTOPLAY_PERIOD * 1000);
-    idleTime = ((long)IDLE_TIME * 1000);
+    autoplayTime = ((long)AUTOPLAY_PERIOD * 1000);     // секунды -> миллисек
+    idleTime = ((long)IDLE_TIME * 60 * 1000);          // минуты -> миллисек
 #if (USE_CLOCK == 1 && USE_WIFI == 1)  
     overlayEnabled = true;
     useNtp = true;
@@ -91,7 +91,7 @@ void saveDefaults() {
 
   EEPROMwrite(6, AUTOPLAY ? 1 : 0);
   EEPROMwrite(7, autoplayTime / 1000);
-  EEPROMwrite(8, constrain(idleTime / 1000, 0, 255));
+  EEPROMwrite(8, constrain(idleTime / 60 / 1000, 0, 255));
 
 #if (USE_CLOCK == 1 && USE_WIFI == 1)  
   EEPROMwrite(5, overlayEnabled);
@@ -223,14 +223,14 @@ long getAutoplayTime() {
 
 void saveIdleTime(long value) {
   if (value != getIdleTime()) {
-    EEPROMwrite(8, constrain(value / 1000, 0, 255));
+    EEPROMwrite(8, constrain(value / 60 / 1000, 0, 255));
     eepromModified = true;
   }
 }
 
 long getIdleTime() {
-  long time = EEPROMread(8) * 1000;  
-  if (time == 0) time = ((long)IDLE_TIME * 1000);
+  long time = EEPROMread(8) * 60 * 1000;  
+  if (time == 0) time = ((long)IDLE_TIME * 60 * 1000);
   return time;
 }
 

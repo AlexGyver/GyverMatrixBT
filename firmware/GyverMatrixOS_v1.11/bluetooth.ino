@@ -1,4 +1,3 @@
-// вкладка работы с bluetooth
 
 #if (BT_MODE == 1 || USE_WIFI == 1)
 #define PARSE_AMOUNT 4       // максимальное количество значений в массиве, который хотим получить
@@ -22,7 +21,7 @@ String pictureLine;
 #if (USE_WIFI==1)
 char incomeBuffer[UDP_TX_PACKET_MAX_SIZE];        // Буфер для приема строки команды из wifi udp сокета
 #else
-char incomeBuffer[32];                            // Буфер для приема строки команды из BT-соединения
+char incomeBuffer[18];                            // Буфер для разбора строки команды передачи картинки из BT-соединения
 #endif
 char replyBuffer[7];                              // ответ клиенту - подтверждения получения команды: "ack;/r/n/0"
 
@@ -40,7 +39,9 @@ void bluetoothRoutine() {
         #if (USE_CLOCK == 1)    
           if (useNtp) {
             if (ntp_t > 0 && millis() - ntp_t > 3000) {
+            #if (BT_MODE == 0)  
               Serial.println("NTP request timeout!");
+            #endif  
               init_time = 0;
               ntp_t = 0;
             }
@@ -54,7 +55,9 @@ void bluetoothRoutine() {
           if (weather_t > 0 && millis() - weather_t > 5000) {
             init_weather = 0;
             weather_t = 0;
+            #if (BT_MODE == 0)  
             Serial.println("Weather request timeout!");
+            #endif
             client.stop();
           }
           if (weather_t > 0) {
@@ -366,9 +369,6 @@ void parsing() {
         effectSpeed = getEffectSpeed(effect);
         effectTimer.setInterval(effectSpeed);
                 
-        effectSpeed = getEffectSpeed(effect);
-        effectTimer.setInterval(effectSpeed);
-
         // intData[1] : дейстие -> 0 - выбор эффекта  = 1 - старт/стоп
         // intData[2] : номер эффекта
         // intData[3] : 0 - стоп 1 - старт
@@ -661,7 +661,7 @@ void parsing() {
           // Оставшийся буфер преобразуем с строку
           if (intData[0] == 5) {  // строка картинки
             pictureLine = String(&incomeBuffer[bufIdx]);
-          } if (intData[0] == 6) {  // текст бегщей строки
+          } if (intData[0] == 6) {  // текст бегущей строки
             runningText = String(&incomeBuffer[bufIdx]);
             runningText.trim();
           }
@@ -682,10 +682,17 @@ void parsing() {
   if (!haveIncomeData) {
     haveIncomeData = Serial.available() > 0;
     if (haveIncomeData) {
-      true;
       fromBT = true;
       if (parseMode == TEXT) {              // если нужно принять строку
-        runningText = Serial.readString();  // принимаем всю
+        str = Serial.readString();          // принимаем всю
+        if (intData[0] == 5) {              // строка картинки
+          pictureLine = str;
+        } if (intData[0] == 6) {            // текст бегущей строки
+          runningText = str;
+          runningText.trim();
+          if (runningText == ".") runningText = "";
+        }
+
         incomingByte = ending;              // сразу завершаем парс
         parseMode = NORMAL;
       } else {
@@ -702,6 +709,7 @@ void parsing() {
       } else {                                                      // если это пробел или ; конец пакета
         if (parse_index == 0) {
           byte cmdMode = string_convert.toInt();
+          intData[0] = cmdMode;
           if (cmdMode == 0) parseMode = COLOR;                      // передача цвета (в отдельную переменную)
           else if (cmdMode == 6 || cmdMode == 5) {
             parseMode = TEXT;

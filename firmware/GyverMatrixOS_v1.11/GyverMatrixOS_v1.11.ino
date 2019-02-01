@@ -86,6 +86,8 @@ boolean AUTOPLAY = 1;         // 0 выкл / 1 вкл автоматическ�
 #define USE_FLAPPY 1        // игра flappy bird
 #define USE_ARKAN 1         // игра арканоид
 
+#define SMOOTH_CHANGE 1     // плавная смена режимов через чёрный
+
 // ****************** ПИНЫ ПОДКЛЮЧЕНИЯ *******************
 // Arduino (Nano, Mega)
 #if (MCU_TYPE == 0)
@@ -180,6 +182,11 @@ byte overlayList[] = {
   MC_RAINBOW_DIAG,
   MC_FIRE
 };
+#endif
+
+#if (SMOOTH_CHANGE == 1)
+byte fadeMode = 4;
+boolean modeDir;
 #endif
 
 #if (MCU_TYPE == 1)

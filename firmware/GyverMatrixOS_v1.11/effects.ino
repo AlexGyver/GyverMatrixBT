@@ -63,7 +63,12 @@ void colorsRoutine() {
 
 // *********** снегопад 2.0 ***********
 void snowRoutine() {
-  modeCode = MC_SNOW;
+  if (loadingFlag) {
+    modeCode = MC_SNOW;
+    loadingFlag = false;
+    FastLED.clear();  // очистить
+  }
+
   // сдвигаем всё вниз
   for (byte x = 0; x < WIDTH; x++) {
     for (byte y = 0; y < HEIGHT - 1; y++) {
@@ -125,7 +130,11 @@ void ballRoutine() {
 
 // *********** радуга заливка ***********
 void rainbowRoutine() {
-  modeCode = MC_RAINBOW;
+  if (loadingFlag) {
+    modeCode = MC_RAINBOW;
+    loadingFlag = false;
+    FastLED.clear();  // очистить
+  }
   hue += 3;
   for (byte i = 0; i < WIDTH; i++) {
     CRGB thisColor = CHSV((byte)(hue + i * float(255 / WIDTH)), 255, 255);
@@ -136,7 +145,11 @@ void rainbowRoutine() {
 
 // *********** радуга дигональная ***********
 void rainbowDiagonalRoutine() {
-  modeCode = MC_RAINBOW_DIAG;
+  if (loadingFlag) {
+    modeCode = MC_RAINBOW_DIAG;
+    loadingFlag = false;
+    FastLED.clear();  // очистить
+  }
   hue += 3;
   for (byte x = 0; x < WIDTH; x++) {
     for (byte y = 0; y < HEIGHT; y++) {
@@ -393,6 +406,7 @@ void fader(byte step) {
     }
   }
 }
+
 void fadePixel(byte i, byte j, byte step) {     // новый фейдер
   int pixelNum = getPixelNumber(i, j);
   if (getPixColor(pixelNum) == 0) return;
@@ -408,7 +422,12 @@ void fadePixel(byte i, byte j, byte step) {     // новый фейдер
 
 // ********************* ЗВЕЗДОПАД ******************
 void starfallRoutine() {
-  modeCode = MC_STARFALL;
+  if (loadingFlag) {
+    modeCode = MC_STARFALL;
+    loadingFlag = false;
+    FastLED.clear();  // очистить
+  }
+  
   // заполняем головами комет левую и верхнюю линию
   for (byte i = HEIGHT / 2; i < HEIGHT; i++) {
     if (getPixColorXY(0, i) == 0
@@ -417,6 +436,7 @@ void starfallRoutine() {
         && getPixColorXY(0, i - 1) == 0)
       leds[getPixelNumber(0, i)] = CHSV(random(0, 200), SATURATION, 255);
   }
+  
   for (byte i = 0; i < WIDTH / 2; i++) {
     if (getPixColorXY(i, HEIGHT - 1) == 0
         && (random(0, STAR_DENSE) == 0)
@@ -443,7 +463,11 @@ void starfallRoutine() {
 
 // рандомные гаснущие вспышки
 void sparklesRoutine() {
-  modeCode = MC_SPARKLES;
+  if (loadingFlag) {
+    modeCode = MC_SPARKLES;
+    loadingFlag = false;
+    FastLED.clear();  // очистить
+  }
   for (byte i = 0; i < DENSE; i++) {
     byte x = random(0, WIDTH);
     byte y = random(0, HEIGHT);

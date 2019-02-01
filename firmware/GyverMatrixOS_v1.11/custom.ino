@@ -1,7 +1,6 @@
 // свой список режимов
 
 // ************************ НАСТРОЙКИ ************************
-#define SMOOTH_CHANGE 1     // плавная смена режимов через чёрный
 #define SHOW_FULL_TEXT 1    // не переключать режим, пока текст не покажется весь
 #define SHOW_TEXT_ONCE 1    // показывать бегущий текст только 1 раз
 
@@ -127,10 +126,6 @@ void customModes() {
 }
 
 // ********************* ОСНОВНОЙ ЦИКЛ РЕЖИМОВ *******************
-#if (SMOOTH_CHANGE == 1)
-byte fadeMode = 4;
-boolean modeDir;
-#endif
 
 static void nextMode() {
 #if (SMOOTH_CHANGE == 1)

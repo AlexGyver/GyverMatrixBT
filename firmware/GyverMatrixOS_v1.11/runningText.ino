@@ -19,9 +19,15 @@ void fillString(String text, uint32_t color) {
   if (loadingFlag) {
     offset = WIDTH;   // перемотка в правый край
     loadingFlag = false;    
+#if (SMOOTH_CHANGE == 1)
+    loadingFlag = modeCode == MC_TEXT && fadeMode < 2 ;
+#else
+    loadingFlag = false;        
+#endif
     modeCode = MC_TEXT;
     fullTextFlag = false;
   }
+  
   if (scrollTimer.isReady()) {
     FastLED.clear();
     byte i = 0, j = 0;

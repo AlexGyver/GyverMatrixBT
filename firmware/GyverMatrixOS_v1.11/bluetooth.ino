@@ -277,61 +277,90 @@ void parsing() {
         loadingFlag = false;
 
         // строка картинки - в pictureLine в формате:  для UDP:  'Y colorHEX X|colorHEX X|...|colorHEX X'
-        //                                             для BT будет один пакет 'Y colorHEX X' из за ограничения размера приемного буфера
+        //                                             для BT будет один пакет 'colorHEX X Y' из за ограничения размера приемного буфера
 
-        // Получить номер строки (Y) для которой получили строку с данными 
-        b_tmp = pictureLine.indexOf(" ");
-        str = pictureLine.substring(0, b_tmp);
-        pntY = str.toInt();
-        pictureLine = pictureLine.substring(b_tmp+1);
-        
-        pictureLine.toCharArray(incomeBuffer, pictureLine.length()+1);
-        pch = strtok (incomeBuffer,"|");
-        pntIdx = 0;
-        while (pch != NULL)
-        {
-          pntPart[pntIdx++] = String(pch);
-          pch = strtok (NULL, "|");
+        if (fromWiFi) {
+          // Разбираем СТРОКУ из принятого буфера формата 'Y colorHEX X|colorHEX X|...|colorHEX X'
+          // Получить номер строки (Y) для которой получили строку с данными 
+          b_tmp = pictureLine.indexOf(" ");
+          str = pictureLine.substring(0, b_tmp);
+          pntY = str.toInt();
+          pictureLine = pictureLine.substring(b_tmp+1);
+          
+          pictureLine.toCharArray(incomeBuffer, pictureLine.length()+1);
+          pch = strtok (incomeBuffer,"|");
+          pntIdx = 0;
+          while (pch != NULL)
+          {
+            pntPart[pntIdx++] = String(pch);
+            pch = strtok (NULL, "|");
+          }
+          
+          for (int i=0; i<pntIdx; i++) {
+            str = pntPart[i];
+            str.toCharArray(buf, str.length()+1);
+  
+            pntColor=HEXtoInt(String(strtok(buf," ")));
+            pntX=atoi(strtok(NULL," "));
+  
+            // начало картинки - очистить матрицу
+            if ((pntX == 0) && (pntY == HEIGHT - 1)) {
+              FastLED.clear(); 
+              FastLED.show();
+            }
+            
+            drawPixelXY(pntX, pntY, gammaCorrection(pntColor));
+          }
+  
+          // Выводить построчно для ускорения вывода на экран
+          if (pntX == WIDTH - 1)
+            FastLED.show();
+  
+          // Подтвердить прием строки изображения
+          str = "$5 " + String(pntY)+ "-" + String(pntX) + " ack" + String(ackCounter++) + ";";
+    
+  #if (USE_WIFI == 1)
+          if (fromWiFi) { 
+            str.toCharArray(incomeBuffer, str.length()+1);    
+            udp.beginPacket(udp.remoteIP(), udp.remotePort());
+            udp.write(incomeBuffer);
+            udp.endPacket();
+            delay(0);
+          }  
+  #endif
         }
-        
-        for (int i=0; i<pntIdx; i++) {
-          str = pntPart[i];
-          str.toCharArray(buf, str.length()+1);
 
-          pntColor=HEXtoInt(String(strtok(buf," ")));
-          pntX=atoi(strtok(NULL," "));
-
+        if (fromBT) {
+          // Разбираем массив принятых параметров intData[2]..intData[3], где
+          // intData[2] - координата X
+          // intData[3] - координата Y
+          // Цвет точки - в globalColor
+          pntX = intData[2];
+          pntY = intData[3];
+          
           // начало картинки - очистить матрицу
           if ((pntX == 0) && (pntY == HEIGHT - 1)) {
             FastLED.clear(); 
+            FastLED.show();
           }
-          
-          drawPixelXY(pntX, pntY, gammaCorrection(pntColor));
+
+          drawPixelXY(pntX, pntY, gammaCorrection(globalColor));
+  
+          // Выводить построчно для ускорения вывода на экран
+          if (pntX == WIDTH - 1)
+            FastLED.show();
+  
+          // Подтвердить прием строки изображения
+          str = "$5 " + String(pntY)+ "-" + String(pntX) + " ack" + String(ackCounter++) + ";";
+  
+  #if (BT_MODE == 1)
+          // После отправки команды из Андроид-программы, она ждет подтверждения получения"
+          if (fromBT) {
+            Serial.println(str);
+          }
+  #endif  
         }
-
-        // Выводить построчно для ускорения вывода на экран
-        if (pntX == WIDTH - 1)
-          FastLED.show();
-
-        // Подтвердить прием строки изображения
-        str = "$5 " + String(pntY)+ "-" + String(pntX) + " ack" + String(ackCounter++) + ";\r\n";
-
-#if (BT_MODE == 1)
-        // После отправки команды из Андроид-программы, она ждет подтверждения получения"
-        if (fromBT) {
-          Serial.println(str);
-        }
-#endif
-
-#if (USE_WIFI == 1)
-        if (fromWiFi) { 
-          str.toCharArray(incomeBuffer, str.length()+1);    
-          udp.beginPacket(udp.remoteIP(), udp.remotePort());
-          udp.write(incomeBuffer);
-          udp.endPacket();
-          delay(0);
-        }  
-#endif
+        
         // так как Acknowledge не отправляется, а вместо этогоо тправляется ответная посылка,
         // флаги откуда получена команда сбрасываем здесь. Для других команд - сбрасываются в sendAcknowledge()
         fromWiFi = false;
@@ -685,9 +714,7 @@ void parsing() {
       fromBT = true;
       if (parseMode == TEXT) {              // если нужно принять строку
         str = Serial.readString();          // принимаем всю
-        if (intData[0] == 5) {              // строка картинки
-          pictureLine = str;
-        } if (intData[0] == 6) {            // текст бегущей строки
+        if (intData[0] == 6) {            // текст бегущей строки
           runningText = str;
           runningText.trim();
           if (runningText == ".") runningText = "";
@@ -710,8 +737,8 @@ void parsing() {
         if (parse_index == 0) {
           byte cmdMode = string_convert.toInt();
           intData[0] = cmdMode;
-          if (cmdMode == 0) parseMode = COLOR;                      // передача цвета (в отдельную переменную)
-          else if (cmdMode == 6 || cmdMode == 5) {
+          if (cmdMode == 0 || (fromBT && cmdMode == 5)) parseMode = COLOR;                      // передача цвета (в отдельную переменную)
+          else if (cmdMode == 6 || (fromWiFi && cmdMode == 5)) {
             parseMode = TEXT;
           }
           else parseMode = NORMAL;
@@ -727,6 +754,8 @@ void parsing() {
               incomingByte = ending;
               parseStarted = false;
               BTcontrol = true;
+            } else {
+              parseMode = NORMAL;
             }
           }
         } else {
@@ -785,15 +814,15 @@ void sendPageParams(int page) {
   byte b_tmp;
   switch (page) { 
     case 1:  // Настройки. Вернуть: Ширина/Высота матрицы; Яркость; Деморежм и Автосмена; Время смены режимо
-      str="$18 W:"+String(WIDTH)+";H:"+String(HEIGHT)+";DM:";
-      if (BTcontrol) str+="0;AP:"; else str+="1;AP:";
-      if (AUTOPLAY)  str+="1;BR:"; else str+="0;BR:";
-      str+=String(globalBrightness) + ";PD:" + String(autoplayTime / 1000) + ";IT:" + String(idleTime / 60 / 1000) +  ";";
+      str="$18 W:"+String(WIDTH)+"|H:"+String(HEIGHT)+"|DM:";
+      if (BTcontrol) str+="0|AP:"; else str+="1|AP:";
+      if (AUTOPLAY)  str+="1|BR:"; else str+="0|BR:";
+      str+=String(globalBrightness) + "|PD:" + String(autoplayTime / 1000) + "|IT:" + String(idleTime / 60 / 1000) +  ";";
       break;
     case 2:  // Рисование. Вернуть: Яркость; Цвет точки;
       color = ("000000" + String(globalColor, HEX));
       color = color.substring(color.length() - 6); // FFFFFF             
-      str="$18 BR:"+String(globalBrightness) + ";CL:" + color + ";";
+      str="$18 BR:"+String(globalBrightness) + "|CL:" + color + ";";
       break;
     case 3:  // Картинка. Вернуть: Яркость;
       str="$18 BR:"+String(globalBrightness) + ";";
@@ -801,8 +830,8 @@ void sendPageParams(int page) {
     case 4:  // Текст. Вернуть: Яркость; Скорость текста; Вкл/Выкл; Текст
       text = runningText;
       text.replace(";","~");
-      str="$18 BR:"+String(globalBrightness) + ";ST:" + String(constrain(map(scrollSpeed, D_TEXT_SPEED_MIN,D_TEXT_SPEED_MAX, 0, 255), 0,255)) + ";ST:";
-      if (runningFlag)  str+="1;TX:["; else str+="0;TX:[";
+      str="$18 BR:"+String(globalBrightness) + "|ST:" + String(constrain(map(scrollSpeed, D_TEXT_SPEED_MIN,D_TEXT_SPEED_MAX, 0, 255), 0,255)) + "|ST:";
+      if (runningFlag)  str+="1|TX:["; else str+="0|TX:[";
       str += text + "]" + ";";
       break;
     case 5:  // Эффекты. Вернуть: Номер эффекта, Остановлен или играет; Яркость; Скорость эффекта; Оверлей часов 
@@ -816,30 +845,30 @@ void sendPageParams(int page) {
         }
       }
 #endif      
-      str="$18 EF:"+String(effect+1) + ";ES:";
-      if (effectsFlag)  str+="1;BR:"; else str+="0;BR:";
-      str+=String(globalBrightness) + ";SE:" + String(constrain(map(effectSpeed, D_EFFECT_SPEED_MIN,D_EFFECT_SPEED_MAX, 0, 255), 0,255));
+      str="$18 EF:"+String(effect+1) + "|ES:";
+      if (effectsFlag)  str+="1|BR:"; else str+="0|BR:";
+      str+=String(globalBrightness) + "|SE:" + String(constrain(map(effectSpeed, D_EFFECT_SPEED_MIN,D_EFFECT_SPEED_MAX, 0, 255), 0,255));
 #if (USE_CLOCK == 1)      
       if (isColorEffect(effect) || !allowed || effect == 9) 
-          str+=";EC:X;";  // X - параметр не используется (неприменим)
+          str+="|EC:X;";  // X - параметр не используется (неприменим)
       else    
-          str+=";EC:" + String(getEffectClock(effect)) + ";";
+          str+="|EC:" + String(getEffectClock(effect)) + ";";
 #else
-      str+=";EC:X;";  // X - параметр не используется (неприменим)
+      str+="|EC:X;";  // X - параметр не используется (неприменим)
 #endif      
       break;
     case 6:  // Игры. Вернуть: Номер игры; Вкл.выкл; Яркость; Скорость игры
-      str="$18 GM:"+String(game+1) + ";GS:";
-      if (gamemodeFlag && !gamePaused)  str+="1;BR:"; else str+="0;BR:";
-      str+=String(globalBrightness) + ";SG:" + String(constrain(map(gameSpeed, D_GAME_SPEED_MIN,D_GAME_SPEED_MAX, 0, 255), 0,255)) + ";"; 
+      str="$18 GM:"+String(game+1) + "|GS:";
+      if (gamemodeFlag && !gamePaused)  str+="1|BR:"; else str+="0|BR:";
+      str+=String(globalBrightness) + "|SG:" + String(constrain(map(gameSpeed, D_GAME_SPEED_MIN,D_GAME_SPEED_MAX, 0, 255), 0,255)) + ";"; 
       break;
     case 7:  // Настройки часов. Вернуть: Оверлей вкл/выкл
 #if (USE_CLOCK == 1)      
-      str="$18 CE:"+String(getClockOverlayEnabled()) + ";CC:" + String(COLOR_MODE)
+      str="$18 CE:"+String(getClockOverlayEnabled()) + "|CC:" + String(COLOR_MODE)
 #if (USE_WIFI == 1)      
-      + ";NP:"; 
-      if (useNtp)  str+="1;NT:"; else str+="0;NT:";
-      str+=String(SYNC_TIME_PERIOD) + ";NZ:" + String(timeZoneOffset)  
+      + "|NP:"; 
+      if (useNtp)  str+="1|NT:"; else str+="0|NT:";
+      str+=String(SYNC_TIME_PERIOD) + "|NZ:" + String(timeZoneOffset)  
 #endif      
       + ";";
 #endif      
@@ -847,7 +876,6 @@ void sendPageParams(int page) {
   }
   
   if (str.length() > 0) {
-    str += "\r\n";
     // Отправить клиенту запрошенные параметры страницы / режимов
 #if (BT_MODE == 1)
     // После отправки команды из Андроид-программы, она ждет подтверждения получения - ответ "ack;"
@@ -869,13 +897,13 @@ void sendAcknowledge() {
 #if (BT_MODE == 1)
   // После отправки команды из Андроид-программы, она ждет подтверждения получения - ответ "ack;"
   if (fromBT) {
-    Serial.println("ack" + String(ackCounter++) + ";\r\n");
+    Serial.println("ack" + String(ackCounter++) + ";");
   }
 #endif
 #if (USE_WIFI == 1)
   // Если данные были получены по WiFi - отправить подтверждение, чтобы клиентский сокет прервал ожидание
   if (fromWiFi) {
-    String reply = "ack" + String(ackCounter++) + ";\r\n";
+    String reply = "ack" + String(ackCounter++) + ";";
     reply.toCharArray(replyBuffer, reply.length()+1);    
     udp.beginPacket(udp.remoteIP(), udp.remotePort());
     udp.write(replyBuffer);

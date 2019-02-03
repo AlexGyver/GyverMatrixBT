@@ -610,6 +610,8 @@ void parsing() {
                CLOCK_X = byte(float(WIDTH - (2*3 + 1)) / 2 + 0.51) ;    // 2 цифры * (шрифт 3 пикс шириной) 1 + пробел между цифрами) /2 - в центр
                CLOCK_Y = byte(float(HEIGHT - (2*5 + 1)) / 2 + 0.51);    // Две строки цифр 5 пикс высотой + 1 пробел между строкми / 2 - в центр
              }
+             if (CLOCK_X < 0) CLOCK_X = 0;
+             if (CLOCK_Y < 0) CLOCK_Y = 0;
              saveClockOrientation(CLOCK_ORIENT);
              break;
            case 5:               // $19 5 X; - Режим цвета часов  X: 0 - горизонтально, 1 - вертикально

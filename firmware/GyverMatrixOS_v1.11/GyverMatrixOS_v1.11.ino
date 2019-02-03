@@ -127,6 +127,7 @@ CRGB leds[NUM_LEDS];
 #define USE_WIFI (WIFI_MODE == 1 && MCU_TYPE == 1)           // WiFI поддерживается только для NodeMCU, Wemos D1
 #define GET_WEATHER (USE_WEATHER == 1 && USE_WIFI == 1)      // Прогноз погоды с интернета - только при наличии WiFi
 
+#if (USE_CLOCK == 1)
 byte CLOCK_ORIENT = 0;         // 0 горизонтальные, 1 вертикальные
 // Для CLOCK_ORIENT == 0
 byte CLOCK_X = byte(float(WIDTH - (4*3 + 3*1)) / 2 + 0.51) ;  // 4 цифры * (шрифт 3 пикс шириной) 3 + пробела между цифрами), /2 - в центр
@@ -140,6 +141,7 @@ byte COLOR_MODE = 0;           // Режим цвета часов
 //                                0 - заданные ниже цвета
 //                                1 - радужная смена (каждая цифра)
 //                                2 - радужная смена (часы, точки, минуты)
+#endif
 
 #define MAX_EFFECT 22         // количество эффектов, определенных в прошивке
 #define MAX_GAME 6            // количество игр, определенных в прошивке
@@ -396,6 +398,11 @@ void setup() {
   FastLED.clear();
   FastLED.show();
   randomSeed(analogRead(0) + analogRead(1));    // пинаем генератор случайных чисел
+
+#if (USE_CLOCK == 1)
+  if (CLOCK_X < 0) CLOCK_X = 0;
+  if (CLOCK_Y < 0) CLOCK_Y = 0;  
+#endif  
 }
 
 void loop() {

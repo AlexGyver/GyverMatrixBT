@@ -233,7 +233,7 @@ void shiftUp() {
   for (uint8_t y = HEIGHT - 1; y > 0; y--) {
     for (uint8_t x = 0; x < WIDTH; x++) {
       uint8_t newX = x;
-      if (x > 15) newX = x - 15;
+      if (x > 15) newX = x%16;
       if (y > 7) continue;
       matrixValue[y][newX] = matrixValue[y - 1][newX];
     }
@@ -241,7 +241,7 @@ void shiftUp() {
 
   for (uint8_t x = 0; x < WIDTH; x++) {
     uint8_t newX = x;
-    if (x > 15) newX = x - 15;
+    if (x > 15) newX = x%16;
     matrixValue[0][newX] = line[newX];
   }
 }
@@ -256,7 +256,7 @@ void drawFrame(int pcnt) {
   for (unsigned char y = HEIGHT - 1; y > 0; y--) {
     for (unsigned char x = 0; x < WIDTH; x++) {
       uint8_t newX = x;
-      if (x > 15) newX = x - 15;
+      if (x > 15) newX = x%16;
       if (y < 8) {
         nextv =
           (((100.0 - pcnt) * matrixValue[y][newX]
@@ -287,7 +287,7 @@ void drawFrame(int pcnt) {
   //first row interpolates with the "next" line
   for (unsigned char x = 0; x < WIDTH; x++) {
     uint8_t newX = x;
-    if (x > 15) newX = x - 15;
+    if (x > 15) newX = x%16;
     CRGB color = CHSV(
                    HUE_ADD + pgm_read_byte(&(hueMask[0][newX])), // H
                    255,           // S

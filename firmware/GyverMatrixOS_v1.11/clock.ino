@@ -3,13 +3,17 @@
 // ****************** НАСТРОЙКИ ЧАСОВ *****************
 #define OVERLAY_CLOCK 1     // часы на фоне всех эффектов и игр. Жрёт SRAM память!
 #define CLOCK_ORIENT 0      // 0 горизонтальные, 1 вертикальные
-#define BINARY_CLOCK 1      // 0 - отключить режим бинарных часов, 1 - включить (AM)
 #define CLOCK_X 0           // позиция часов по X (начало координат - левый нижний угол)
 #define CLOCK_Y 0           // позиция часов по Y (начало координат - левый нижний угол)
 #define COLOR_MODE 2        // Режим цвета часов
 //                          0 - заданные ниже цвета
 //                          1 - радужная смена (каждая цифра)
 //                          2 - радужная смена (часы, точки, минуты)
+
+#define BINARY_CLOCK 0      // Режим бинарных часов: (AM)
+//                          0 - отключить режим бинарных часов,
+//                          1 - включить маленькие (занимаемое место 4x4)
+//                          2 - включить большие (занимаемое место 8x8) (сдвиг работает только на четное число пикселей!)
 
 #define MIN_COLOR CRGB::White     // цвет минут
 #define HOUR_COLOR CRGB::White    // цвет часов
@@ -107,7 +111,7 @@ void drawClock(byte hrs, byte mins, boolean dots, byte X, byte Y) {
 
   drawDigit3x5(mins / 10, X, Y, clockLED[3]);
   drawDigit3x5(mins % 10, X + 4, Y, clockLED[4]);
-#else                                                                //режим бинарных часов (AM)
+#elif (BINARY_CLOCK == 2)                                           //режим больших бинарных часов (AM)
   X = X/2;
   Y = Y/2; //часы можно сдвинуть только на четное число пикселей.
   if (hrs > 0) {
@@ -134,7 +138,31 @@ void drawClock(byte hrs, byte mins, boolean dots, byte X, byte Y) {
   if (dots) {
     draw2x2PixelXY(0,3,clockLED[2]); //мигающая точка секунд в левом-верхнем углу часов
   }
-  
+#else                                                              //режим маленьких бинарных часов (АМ)
+  if (hrs > 0) {
+    if (hrs > 9) {
+      if (((hrs/10)>>1)&1) drawPixelXY(0+X,1+Y,clockLED[0]); 
+      if (((hrs/10)>>0)&1) drawPixelXY(0+X,0+Y,clockLED[0]);
+    }
+    if (((hrs%10)>>3)&1) drawPixelXY(1+X,3+Y,clockLED[1]); 
+    if (((hrs%10)>>2)&1) drawPixelXY(1+X,2+Y,clockLED[1]); 
+    if (((hrs%10)>>1)&1) drawPixelXY(1+X,1+Y,clockLED[1]); 
+    if (((hrs%10)   )&1) drawPixelXY(1+X,0+Y,clockLED[1]); 
+  }
+  if (mins > 0) {
+    if (mins > 9) {
+      if (((mins/10)>>2)&1) drawPixelXY(2+X,2+Y,clockLED[3]);
+      if (((mins/10)>>1)&1) drawPixelXY(2+X,1+Y,clockLED[3]); 
+      if (((mins/10)   )&1) drawPixelXY(2+X,0+Y,clockLED[3]);
+    }
+    if (((mins%10)>>3)&1) drawPixelXY(3+X,3+Y,clockLED[4]); 
+    if (((mins%10)>>2)&1) drawPixelXY(3+X,2+Y,clockLED[4]); 
+    if (((mins%10)>>1)&1) drawPixelXY(3+X,1+Y,clockLED[4]); 
+    if (((mins%10)   )&1) drawPixelXY(3+X,0+Y,clockLED[4]); 
+  }
+  if (dots) {
+    drawPixelXY(0,3,clockLED[2]); //мигающая точка секунд в левом-верхнем углу часов
+  }
 #endif
 }
 

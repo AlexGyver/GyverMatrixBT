@@ -4,7 +4,7 @@
 #define OVERLAY_CLOCK 1     // часы на фоне всех эффектов и игр. Жрёт SRAM память!
 #define CLOCK_ORIENT 0      // 0 горизонтальные, 1 вертикальные
 #define CLOCK_X 0           // позиция часов по X (начало координат - левый нижний угол)
-#define CLOCK_Y 0           // позиция часов по Y (начало координат - левый нижний угол)
+#define CLOCK_Y 6           // позиция часов по Y (начало координат - левый нижний угол)
 #define COLOR_MODE 2        // Режим цвета часов
 //                          0 - заданные ниже цвета
 //                          1 - радужная смена (каждая цифра)
@@ -136,7 +136,7 @@ void drawClock(byte hrs, byte mins, boolean dots, byte X, byte Y) {
     if (((mins%10)   )&1) draw2x2PixelXY(3+X,0+Y,clockLED[4]); 
   }
   if (dots) {
-    draw2x2PixelXY(0,3,clockLED[2]); //мигающая точка секунд в левом-верхнем углу часов
+    draw2x2PixelXY(0+X,3+Y,clockLED[2]); //мигающая точка секунд в левом-верхнем углу часов
   }
 #else                                                              //режим маленьких бинарных часов (АМ)
   if (hrs > 0) {
@@ -161,7 +161,7 @@ void drawClock(byte hrs, byte mins, boolean dots, byte X, byte Y) {
     if (((mins%10)   )&1) drawPixelXY(3+X,0+Y,clockLED[4]); 
   }
   if (dots) {
-    drawPixelXY(0,3,clockLED[2]); //мигающая точка секунд в левом-верхнем углу часов
+    drawPixelXY(0+X,3+Y,clockLED[2]); //мигающая точка секунд в левом-верхнем углу часов
   }
 #endif
 }

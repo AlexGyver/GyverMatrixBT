@@ -357,6 +357,7 @@ timerMinim idleTimer(idleTime);
 void setup() {
 #if (BT_MODE == 1)
   Serial.begin(9600);
+  delay(10);
 #endif
 
 #if (USE_EEPROM == 1)
@@ -371,6 +372,7 @@ void setup() {
 // Если BT используется - Serial исполльзуется для коммуникации через BT
 #if (BT_MODE == 0)
   Serial.begin(115200);
+  delay(10);
 #endif
   WiFi.setSleepMode(WIFI_NONE_SLEEP);
   WiFi.begin(ssid, pass);

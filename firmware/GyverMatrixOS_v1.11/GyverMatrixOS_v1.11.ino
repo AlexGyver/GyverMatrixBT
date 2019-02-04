@@ -372,8 +372,9 @@ void setup() {
 #if (BT_MODE == 0)
   Serial.begin(115200);
 #endif
-  WiFi.mode(WIFI_STA);
   WiFi.setSleepMode(WIFI_NONE_SLEEP);
+  WiFi.begin(ssid, pass);
+  udp.begin(localPort);
 #endif
 
 #if (USE_CLOCK == 1 && USE_RTC == 1 && (MCU_TYPE == 0 || MCU_TYPE == 1))
@@ -429,7 +430,6 @@ void checkWiFiConnection() {
       Serial.print(ssid);
       Serial.println("...");
 #endif  
-      WiFi.begin(ssid, pass);
       printed_1 = true;
       printed_2 = false;
     }
@@ -444,7 +444,6 @@ void checkWiFiConnection() {
 #endif  
     printed_1 = false;
     printed_2 = true;
-    udp.begin(localPort);
   }
 }
 #else

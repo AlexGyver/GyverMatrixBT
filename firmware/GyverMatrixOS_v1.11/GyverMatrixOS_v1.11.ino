@@ -374,6 +374,7 @@ void setup() {
 #endif
   WiFi.setSleepMode(WIFI_NONE_SLEEP);
   WiFi.begin(ssid, pass);
+  delay(100);
   udp.begin(localPort);
 #endif
 

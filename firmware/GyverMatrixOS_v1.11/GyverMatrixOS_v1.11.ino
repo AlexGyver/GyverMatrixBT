@@ -395,6 +395,8 @@ void setup() {
   // Таймер бездействия
   if (idleTime == 0) // Таймер Idle  отключен
     idleTimer.setInterval(4294967295);
+  else  
+    idleTimer.setInterval(idleTime);
   
   // настройки ленты
   FastLED.addLeds<WS2812, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );

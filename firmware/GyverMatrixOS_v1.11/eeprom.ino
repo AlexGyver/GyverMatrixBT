@@ -69,6 +69,7 @@ void loadSettings() {
   scrollTimer.setInterval(scrollSpeed);
   effectTimer.setInterval(effectSpeed);
   gameTimer.setInterval(gameSpeed);
+  idleTimer.setInterval(idleTime);
   
 #if (USE_CLOCK == 1 && USE_WIFI == 1)    
   ntpTimer.setInterval(1000 * 60 * SYNC_TIME_PERIOD);

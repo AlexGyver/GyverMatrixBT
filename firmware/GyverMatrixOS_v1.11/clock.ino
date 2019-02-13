@@ -73,9 +73,8 @@ void parseNTP() {
 }
 
 void getNTP() {
-  if (!wifi_connected) {
-    return;
-  }
+  if (!wifi_connected) return;
+
   WiFi.hostByName(ntpServerName, timeServerIP);
 
   sendNTPpacket(timeServerIP); // send an NTP packet to a time server
@@ -135,6 +134,61 @@ String clockCurrentText() {
   if (sHrs.length() > 2) sHrs = sHrs.substring(1);
   if (sMin.length() > 2) sMin = sMin.substring(1);
   return sHrs + ":" + sMin;
+}
+
+String dateCurrentTextShort() {
+  
+#if (USE_RTC == 1 && (MCU_TYPE == 0 || MCU_TYPE == 1))
+    DateTime now = rtc.now();
+    aday = now.day();
+    amnth = now.month();
+    ayear = now.year();
+#elif (MCU_TYPE == 1) 
+    aday = day();
+    amnth = month();
+    ayear = year();
+#endif
+
+  String sDay = "0" + String(aday);  
+  String sMnth = "0" + String(amnth);
+  String sYear = String(ayear);
+  if (sDay.length() > 2) sDay = sDay.substring(1);
+  if (sMnth.length() > 2) sMnth = sMnth.substring(1);
+  return sDay + "." + sMnth + "." + sYear;
+}
+
+String dateCurrentTextLong() {
+  
+#if (USE_RTC == 1 && (MCU_TYPE == 0 || MCU_TYPE == 1))
+    DateTime now = rtc.now();
+    aday = now.day();
+    amnth = now.month();
+    ayear = now.year();
+#elif (MCU_TYPE == 1) 
+    aday = day();
+    amnth = month();
+    ayear = year();
+#endif
+
+  String sDay = "0" + String(aday);  
+  String sMnth = "";
+  String sYear = String(ayear);
+  switch (amnth) {
+    case  1: sMnth = " января "; break;
+    case  2: sMnth = " февраля "; break;
+    case  3: sMnth = " марта "; break;
+    case  4: sMnth = " апреля "; break;
+    case  5: sMnth = " мая "; break;
+    case  6: sMnth = " июня "; break;
+    case  7: sMnth = " июля "; break;
+    case  8: sMnth = " августа "; break;
+    case  9: sMnth = " сентября "; break;
+    case 10: sMnth = " октября "; break;
+    case 11: sMnth = " ноября "; break;
+    case 12: sMnth = " декабря "; break;
+  }  
+  if (sDay.length() > 2) sDay = sDay.substring(1);
+  return sDay + sMnth + sYear + " года";
 }
 
 void clockColor() {

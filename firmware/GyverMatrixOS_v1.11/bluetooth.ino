@@ -1,4 +1,3 @@
-
 #if (BT_MODE == 1 || USE_WIFI == 1)
 #define PARSE_AMOUNT 4       // максимальное количество значений в массиве, который хотим получить
 #define header '$'           // стартовый символ
@@ -76,7 +75,9 @@ void bluetoothRoutine() {
       String text = runningText;
       if (text == "") {
         #if (USE_CLOCK == 1)          
-           text = clockCurrentText();
+           text = init_time ==0 
+             ? clockCurrentText()
+             : clockCurrentText() + " " + dateCurrentTextLong();  // + dateCurrentTextShort()
         #else
            text = "Gyver Matrix";
         #endif           
@@ -604,11 +605,11 @@ void parsing() {
              CLOCK_ORIENT = intData[2] == 1 ? 1  : 0;
              // Центрируем часы по горизонтали/вертикали по ширине / высоте матрицы
              if (CLOCK_ORIENT == 0) {
-               CLOCK_X = byte(float(WIDTH - (4*3 + 3*1)) / 2 + 0.51) ;  // 4 цифры * (шрифт 3 пикс шириной) 3 + пробела между цифрами), /2 - в центр
-               CLOCK_Y = byte(float(HEIGHT - 1*5) / 2 + 0.51);          // Одна строка цифр 5 пикс высотой  / 2 - в центр
+               CLOCK_X = CLOCK_X_H;
+               CLOCK_Y = CLOCK_Y_H;
              } else {
-               CLOCK_X = byte(float(WIDTH - (2*3 + 1)) / 2 + 0.51) ;    // 2 цифры * (шрифт 3 пикс шириной) 1 + пробел между цифрами) /2 - в центр
-               CLOCK_Y = byte(float(HEIGHT - (2*5 + 1)) / 2 + 0.51);    // Две строки цифр 5 пикс высотой + 1 пробел между строкми / 2 - в центр
+               CLOCK_X = CLOCK_X_V;
+               CLOCK_Y = CLOCK_Y_V;
              }
              if (CLOCK_X < 0) CLOCK_X = 0;
              if (CLOCK_Y < 0) CLOCK_Y = 0;

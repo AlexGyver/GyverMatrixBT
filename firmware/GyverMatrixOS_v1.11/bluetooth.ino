@@ -834,7 +834,7 @@ void sendPageParams(int page) {
     case 4:  // Текст. Вернуть: Яркость; Скорость текста; Вкл/Выкл; Текст
       text = runningText;
       text.replace(";","~");
-      str="$18 BR:"+String(globalBrightness) + "|ST:" + String(constrain(map(scrollSpeed, D_TEXT_SPEED_MIN,D_TEXT_SPEED_MAX, 0, 255), 0,255)) + "|ST:";
+      str="$18 BR:"+String(globalBrightness) + "|ST:" + String(constrain(map(scrollSpeed, D_TEXT_SPEED_MIN,D_TEXT_SPEED_MAX, 0, 255), 0,255)) + "|TS:";
       if (runningFlag)  str+="1|TX:["; else str+="0|TX:[";
       str += text + "]" + ";";
       break;

@@ -339,7 +339,7 @@ void clockOverlayUnwrapH(byte posX, byte posY) {
 void clockOverlayWrapV(byte posX, byte posY) {
   byte thisLED = 0;
   for (byte i = posX; i < posX + 7; i++) {
-    for (byte j = posY; j < posY + 10; j++) {
+    for (byte j = posY; j < posY + 11; j++) {
       overlayLEDs[thisLED] = leds[getPixelNumber(i, j)];
       thisLED++;
     }
@@ -351,7 +351,7 @@ void clockOverlayWrapV(byte posX, byte posY) {
 void clockOverlayUnwrapV(byte posX, byte posY) {
   byte thisLED = 0;
   for (byte i = posX; i < posX + 7; i++) {
-    for (byte j = posY; j < posY + 10; j++) {
+    for (byte j = posY; j < posY + 11; j++) {
       leds[getPixelNumber(i, j)] = overlayLEDs[thisLED];
       thisLED++;
     }

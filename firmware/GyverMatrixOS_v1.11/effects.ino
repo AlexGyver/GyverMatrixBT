@@ -38,12 +38,14 @@ boolean brightnessDirection;
 void brightnessRoutine() {
   if (brightnessDirection) {
     breathBrightness += 2;
-    if (breathBrightness > globalBrightness - 1) {
+    if (breathBrightness > globalBrightness - 2) {
+      breathBrightness = globalBrightness;
       brightnessDirection = false;
     }
   } else {
     breathBrightness -= 2;
-    if (breathBrightness < 1) {
+    if (breathBrightness < 2) {
+      breathBrightness = 2;
       brightnessDirection = true;
     }
   }
@@ -61,7 +63,12 @@ void colorsRoutine() {
 
 // *********** снегопад 2.0 ***********
 void snowRoutine() {
-  modeCode = 12;
+  if (loadingFlag) {
+    modeCode = MC_SNOW;
+    loadingFlag = false;
+    FastLED.clear();  // очистить
+  }
+
   // сдвигаем всё вниз
   for (byte x = 0; x < WIDTH; x++) {
     for (byte y = 0; y < HEIGHT - 1; y++) {
@@ -91,7 +98,7 @@ void ballRoutine() {
       vectorB[i] = random(8, 20);
       ballColor = CHSV(random(0, 9) * 28, 255, 255);
     }
-    modeCode = 16;
+    modeCode = MC_BALL;
     loadingFlag = false;
   }
   for (byte i = 0; i < 2; i++) {
@@ -123,10 +130,14 @@ void ballRoutine() {
 
 // *********** радуга заливка ***********
 void rainbowRoutine() {
-  modeCode = 18;
+  if (loadingFlag) {
+    modeCode = MC_RAINBOW;
+    loadingFlag = false;
+    FastLED.clear();  // очистить
+  }
   hue += 3;
   for (byte i = 0; i < WIDTH; i++) {
-    CHSV thisColor = CHSV((byte)(hue + i * float(255 / WIDTH)), 255, 255);
+    CRGB thisColor = CHSV((byte)(hue + i * float(255 / WIDTH)), 255, 255);
     for (byte j = 0; j < HEIGHT; j++)      
       drawPixelXY(i, j, thisColor);   //leds[getPixelNumber(i, j)] = thisColor;
   }
@@ -134,11 +145,15 @@ void rainbowRoutine() {
 
 // *********** радуга дигональная ***********
 void rainbowDiagonalRoutine() {
-  modeCode = 19;
+  if (loadingFlag) {
+    modeCode = MC_RAINBOW_DIAG;
+    loadingFlag = false;
+    FastLED.clear();  // очистить
+  }
   hue += 3;
   for (byte x = 0; x < WIDTH; x++) {
     for (byte y = 0; y < HEIGHT; y++) {
-      CHSV thisColor = CHSV((byte)(hue + (float)(WIDTH / HEIGHT * x + y) * (float)(255 / maxDim)), 255, 255);      
+      CRGB thisColor = CHSV((byte)(hue + (float)(WIDTH / HEIGHT * x + y) * (float)(255 / maxDim)), 255, 255);      
       drawPixelXY(x, y, thisColor); //leds[getPixelNumber(i, j)] = thisColor;
     }
   }
@@ -149,7 +164,7 @@ void rainbowDiagonalRoutine() {
 void rainbowColorsRoutine() {
   hue++;
   for (byte i = 0; i < WIDTH; i++) {
-    CHSV thisColor = CHSV((byte)(hue + i * float(255 / WIDTH)), 255, 255);
+    CRGB thisColor = CHSV((byte)(hue + i * float(255 / WIDTH)), 255, 255);
     for (byte j = 0; j < HEIGHT; j++)
       if (getPixColor(getPixelNumber(i, j)) > 0) drawPixelXY(i, j, thisColor);
   }
@@ -188,7 +203,7 @@ const unsigned char hueMask[8][16] PROGMEM = {
 
 void fireRoutine() {
   if (loadingFlag) {
-    modeCode = 20;
+    modeCode = MC_FIRE;
     loadingFlag = false;
     FastLED.clear();
     generateLine();
@@ -218,7 +233,7 @@ void shiftUp() {
   for (uint8_t y = HEIGHT - 1; y > 0; y--) {
     for (uint8_t x = 0; x < WIDTH; x++) {
       uint8_t newX = x;
-      if (x > 15) newX = x - 15;
+      if (x > 15) newX = x%16;
       if (y > 7) continue;
       matrixValue[y][newX] = matrixValue[y - 1][newX];
     }
@@ -226,7 +241,7 @@ void shiftUp() {
 
   for (uint8_t x = 0; x < WIDTH; x++) {
     uint8_t newX = x;
-    if (x > 15) newX = x - 15;
+    if (x > 15) newX = x%16;
     matrixValue[0][newX] = line[newX];
   }
 }
@@ -241,7 +256,7 @@ void drawFrame(int pcnt) {
   for (unsigned char y = HEIGHT - 1; y > 0; y--) {
     for (unsigned char x = 0; x < WIDTH; x++) {
       uint8_t newX = x;
-      if (x > 15) newX = x - 15;
+      if (x > 15) newX = x%16;
       if (y < 8) {
         nextv =
           (((100.0 - pcnt) * matrixValue[y][newX]
@@ -272,7 +287,7 @@ void drawFrame(int pcnt) {
   //first row interpolates with the "next" line
   for (unsigned char x = 0; x < WIDTH; x++) {
     uint8_t newX = x;
-    if (x > 15) newX = x - 15;
+    if (x > 15) newX = x%16;
     CRGB color = CHSV(
                    HUE_ADD + pgm_read_byte(&(hueMask[0][newX])), // H
                    255,           // S
@@ -286,7 +301,7 @@ void drawFrame(int pcnt) {
 void matrixRoutine() {
   if (loadingFlag) {
     loadingFlag = false;
-    modeCode = 14;
+    modeCode = MC_MATRIX;
     FastLED.clear();
   }
   for (byte x = 0; x < WIDTH; x++) {
@@ -316,7 +331,7 @@ CRGB ballColors[BALLS_AMOUNT];
 
 void ballsRoutine() {
   if (loadingFlag) {
-    modeCode = 17;
+    modeCode = MC_BALLS;
     loadingFlag = false;
     for (byte j = 0; j < BALLS_AMOUNT; j++) {
       int sign;
@@ -383,52 +398,6 @@ void ballsRoutine() {
   }
 }
 
-
-/*
-  // ******************************** СИНУСОИДЫ *******************************
-  #define DEG_TO_RAD 0.017453
-  int t;
-  byte w[WAVES_AMOUNT];
-  byte phi[WAVES_AMOUNT];
-  byte A[WAVES_AMOUNT];
-  CRGB waveColors[WAVES_AMOUNT];
-
-  void wavesRoutine() {
-  if (loadingFlag) {
-    loadingFlag = false;
-    for (byte j = 0; j < WAVES_AMOUNT; j++) {
-      // забиваем случайными данными
-      w[j] = random(17, 25);
-      phi[j] = random(0, 360);
-      A[j] = HEIGHT / 2 * random(4, 11) / 10;
-      waveColors[j] = CHSV(random(0, 9) * 28, 255, 255);
-    }
-  }
-  if (effectTimer.isReady()) {
-
-    // сдвигаем все пиксели вправо
-    for (int i = WIDTH - 1; i > 0; i--)
-      for (int j = 0; j < HEIGHT; j++)
-        drawPixelXY(i, j, getPixColorXY(i - 1, j));
-
-    // увеличиваем "угол"
-    t++;
-    if (t > 360) t = 0;
-
-    // заливаем чёрным левую линию
-    for (byte i = 0; i < HEIGHT; i++) {
-      drawPixelXY(0, i, 0x000000);
-    }
-
-    // генерируем позицию точки через синус
-    for (byte j = 0; j < WAVES_AMOUNT; j++) {
-      float value = HEIGHT / 2 + (float)A[j] * sin((float)w[j] * t * DEG_TO_RAD + (float)phi[j] * DEG_TO_RAD);
-      leds[getPixelNumber(0, (byte)value)] = waveColors[j];
-    }
-  }
-  }
-*/
-
 // функция плавного угасания цвета для всех пикселей
 void fader(byte step) {
   for (byte i = 0; i < WIDTH; i++) {
@@ -437,6 +406,7 @@ void fader(byte step) {
     }
   }
 }
+
 void fadePixel(byte i, byte j, byte step) {     // новый фейдер
   int pixelNum = getPixelNumber(i, j);
   if (getPixColor(pixelNum) == 0) return;
@@ -450,41 +420,14 @@ void fadePixel(byte i, byte j, byte step) {     // новый фейдер
   }
 }
 
-/*
-  void fadePixel(byte i, byte j, byte step) {     // старый фейдер
-  // измеряяем цвет текущего пикселя
-  uint32_t thisColor = getPixColorXY(i, j);
-
-  // если 0, то пропускаем действия и переходим к следующему
-  if (thisColor == 0) return;
-
-  // разбиваем цвет на составляющие RGB
-  byte rgb[3];
-  rgb[0] = (thisColor >> 16) & 0xff;
-  rgb[1] = (thisColor >> 8) & 0xff;
-  rgb[2] = thisColor & 0xff;
-
-  // ищем максимум
-  byte maximum = max(max(rgb[0], rgb[1]), rgb[2]);
-  float coef = 0;
-
-  // если есть возможность уменьшить
-  if (maximum >= step)
-    // уменьшаем и находим коэффициент уменьшения
-    coef = (float)(maximum - step) / maximum;
-
-  // далее все цвета умножаем на этот коэффициент
-  for (byte i = 0; i < 3; i++) {
-    if (rgb[i] > 0) rgb[i] = (float)rgb[i] * coef;
-    else rgb[i] = 0;
-  }
-  leds[getPixelNumber(i, j)] = CRGB(rgb[0], rgb[1], rgb[2]);
-  }
-*/
-
 // ********************* ЗВЕЗДОПАД ******************
 void starfallRoutine() {
-  modeCode = 15;
+  if (loadingFlag) {
+    modeCode = MC_STARFALL;
+    loadingFlag = false;
+    FastLED.clear();  // очистить
+  }
+  
   // заполняем головами комет левую и верхнюю линию
   for (byte i = HEIGHT / 2; i < HEIGHT; i++) {
     if (getPixColorXY(0, i) == 0
@@ -493,6 +436,7 @@ void starfallRoutine() {
         && getPixColorXY(0, i - 1) == 0)
       leds[getPixelNumber(0, i)] = CHSV(random(0, 200), SATURATION, 255);
   }
+  
   for (byte i = 0; i < WIDTH / 2; i++) {
     if (getPixColorXY(i, HEIGHT - 1) == 0
         && (random(0, STAR_DENSE) == 0)
@@ -519,7 +463,11 @@ void starfallRoutine() {
 
 // рандомные гаснущие вспышки
 void sparklesRoutine() {
-  modeCode = 13;
+  if (loadingFlag) {
+    modeCode = MC_SPARKLES;
+    loadingFlag = false;
+    FastLED.clear();  // очистить
+  }
   for (byte i = 0; i < DENSE; i++) {
     byte x = random(0, WIDTH);
     byte y = random(0, HEIGHT);

@@ -22,8 +22,8 @@ int8_t velY_ark = (long)sqrt(sq(VELOCITY) - sq(velX_ark));
 int8_t shelf_x = WIDTH / 2 - SHELF_LENGTH / 2;
 byte shelfMAX = WIDTH - SHELF_LENGTH;
 int arkScore;
+int lastSpeed;
 
-timerMinim ballTimer(BALL_SPEED);
 timerMinim popTimeout(500);
 timerMinim shelfTimer(150);
 
@@ -42,7 +42,7 @@ void arkanoidRoutine() {
     FastLED.clear();
     loadingFlag = false;
     gamemodeFlag = true;
-    modeCode = 2;
+    modeCode = MC_GAME;
     newGameArkan();
     FastLED.show();
   }
@@ -64,7 +64,12 @@ void arkanoidRoutine() {
     buttons = 4;
   }
 
-  if (ballTimer.isReady()) {        // главный таймер игры
+  if (lastSpeed != gameSpeed) {
+    lastSpeed == gameSpeed;
+    gameTimer.setInterval(gameSpeed / 2);
+  }
+
+  if (gameTimer.isReady()) {        // главный таймер игры
     drawPixelXY(posX_ark / 10, posY_ark / 10, CRGB::Black);
     posX_ark = posX_ark + velX_ark;
     posY_ark = posY_ark + velY_ark;

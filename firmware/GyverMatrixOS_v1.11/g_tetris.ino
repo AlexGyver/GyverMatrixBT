@@ -77,7 +77,7 @@ void tetrisRoutine() {
     loadingFlag = false;
     newGameTetris();
     gamemodeFlag = true;
-    modeCode = 2;
+    modeCode = MC_GAME;
   }
 
   if (checkButtons()) {

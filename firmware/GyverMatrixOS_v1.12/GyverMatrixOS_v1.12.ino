@@ -31,7 +31,7 @@
 // при неправильной настрйоке матрицы вы получите предупреждение "Wrong matrix parameters! Set to default"
 // шпаргалка по настройке матрицы здесь! https://alexgyver.ru/matrix_guide/
 
-#define MCU_TYPE 0            // микроконтроллер: 
+#define MCU_TYPE 1            // микроконтроллер: 
 //                            0 - AVR (Arduino NANO/MEGA/UNO)
 //                            1 - ESP8266 (NodeMCU, Wemos D1)
 //                            2 - STM32 (Blue Pill)

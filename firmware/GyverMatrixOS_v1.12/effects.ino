@@ -1,13 +1,9 @@
 // эффекты
 
 // **************** НАСТРОЙКИ ЭФФЕКТОВ ****************
-// эффект "синусоиды" - ОТКЛЮЧЕН
-#define WAVES_AMOUNT 2    // количество синусоид
-
 // эффект "шарики"
 #define BALLS_AMOUNT 3    // количество "шариков"
 #define CLEAR_PATH 1      // очищать путь
-#define DRAW_WALLS 0      // режим с рисованием препятствий для шаров (не работает на ESP и STM32)
 #define TRACK_STEP 70     // длина хвоста шарика (чем больше цифра, тем хвост короче)
 
 // эффект "квадратик"
@@ -19,7 +15,7 @@
 
 // эффект "кометы"
 #define TAIL_STEP 100     // длина хвоста кометы
-#define SATURATION 150    // насыщенность кометы (от 0 до 255)
+#define SATURATION 150    // насыщенность кометы (от 0 до 255) 0=Метель
 #define STAR_DENSE 60     // количество (шанс появления) комет
 
 // эффект "конфетти"
@@ -155,10 +151,9 @@ void rainbowColorsRoutine() {
 
 
 // ********************** огонь **********************
+uint8_t pcnt;
+uint8_t line[WIDTH];
 unsigned char matrixValue[8][16];
-unsigned char line[WIDTH];
-int pcnt = 0;
-
 //these values are substracetd from the generated values to give a shape to the animation
 const unsigned char valueMask[8][16] PROGMEM = {
   {0  , 0  , 0  , 32 , 32 , 0  , 0  , 0  , 0  , 0  , 0  , 32 , 32 , 0  , 0  , 0  },
@@ -183,17 +178,15 @@ const unsigned char hueMask[8][16] PROGMEM = {
   {5 , 1 , 0 , 0 , 0 , 0 , 1 , 5 , 5 , 1 , 0 , 0 , 0 , 0 , 1 , 5  },
   {1 , 0 , 0 , 0 , 0 , 0 , 0 , 1 , 1 , 0 , 0 , 0 , 0 , 0 , 0 , 1  }
 };
-
 void fireRoutine() {
   if (loadingFlag) {
-    modeCode = 20;
     loadingFlag = false;
-    FastLED.clear();
+    modeCode=20;
+    // memset8( leds, 0, NUM_LEDS * 3) ;
     generateLine();
-    memset(matrixValue, 0, sizeof(matrixValue));
   }
   if (pcnt >= 100) {
-    shiftUp();
+    shiftup();
     generateLine();
     pcnt = 0;
   }
@@ -201,18 +194,15 @@ void fireRoutine() {
   pcnt += 25;
 }
 
-
-// Randomly generate the next line (matrix row)
+// Случайным образом генерирует следующую линию (matrix row)
 
 void generateLine() {
   for (uint8_t x = 0; x < WIDTH; x++) {
-    line[x] = random(64, 255);
+    line[x] = random(127, 255);
   }
 }
 
-//shift all values in the matrix up one row
-
-void shiftUp() {
+void shiftup() {
   for (uint8_t y = HEIGHT - 1; y > 0; y--) {
     for (uint8_t x = 0; x < WIDTH; x++) {
       uint8_t newX = x;
@@ -229,8 +219,8 @@ void shiftUp() {
   }
 }
 
-// draw a frame, interpolating between 2 "key frames"
-// @param pcnt percentage of interpolation
+// рисует кадр, интерполируя между 2 "ключевых кадров"
+// параметр pcnt - процент интерполяции
 
 void drawFrame(int pcnt) {
   int nextv;
@@ -267,7 +257,7 @@ void drawFrame(int pcnt) {
     }
   }
 
-  //first row interpolates with the "next" line
+  //Перавя стрка интерполируется со следующей "next" линией
   for (unsigned char x = 0; x < WIDTH; x++) {
     uint8_t newX = x;
     if (x > 15) newX = x - 15;
@@ -279,7 +269,6 @@ void drawFrame(int pcnt) {
     leds[getPixelNumber(newX, 0)] = color;
   }
 }
-
 // **************** МАТРИЦА *****************
 void matrixRoutine()
 {modeCode=14;
@@ -360,26 +349,6 @@ void ballsRoutine() {
 
   // движение шариков
   for (byte j = 0; j < BALLS_AMOUNT; j++) {
-
-    // отскок от нарисованных препятствий
-    if (DRAW_WALLS) {
-      uint32_t thisColor = getPixColorXY(coord[j][0] / 10 + 1, coord[j][1] / 10);
-      if (thisColor == globalColor/* && vector[j][0] > 0*/) {
-        vector[j][0] = -vector[j][0];
-      }
-      thisColor = getPixColorXY(coord[j][0] / 10 - 1, coord[j][1] / 10);
-      if (thisColor == globalColor/* && vector[j][0] < 0*/) {
-        vector[j][0] = -vector[j][0];
-      }
-      thisColor = getPixColorXY(coord[j][0] / 10, coord[j][1] / 10 + 1);
-      if (thisColor == globalColor/* && vector[j][1] > 0*/) {
-        vector[j][1] = -vector[j][1];
-      }
-      thisColor = getPixColorXY(coord[j][0] / 10, coord[j][1] / 10 - 1);
-      if (thisColor == globalColor/* && vector[j][1] < 0*/) {
-        vector[j][1] = -vector[j][1];
-      }
-    }
 
     // движение шариков
     for (byte i = 0; i < 2; i++) {
@@ -546,41 +515,42 @@ void fadePixel(byte i, byte j, byte step) {     // новый фейдер
   leds[getPixelNumber(i, j)] = CRGB(rgb[0], rgb[1], rgb[2]);
   }
 */
-
+uint8_t wrapX(int8_t x){
+  return (x + WIDTH)%WIDTH;
+}
+uint8_t wrapY(int8_t y){
+  return (y + HEIGHT)%HEIGHT;
+}
 // ********************* ЗВЕЗДОПАД ******************
-void starfallRoutine() {
-  modeCode = 15;
-  // заполняем головами комет левую и верхнюю линию
-  for (byte i = HEIGHT / 2; i < HEIGHT; i++) {
-    if (getPixColorXY(0, i) == 0
-        && (random(0, STAR_DENSE) == 0)
-        && getPixColorXY(0, i + 1) == 0
-        && getPixColorXY(0, i - 1) == 0)
-      leds[getPixelNumber(0, i)] = CHSV(random(0, 200), SATURATION, 255);
-  }
-  for (byte i = 0; i < WIDTH / 2; i++) {
-    if (getPixColorXY(i, HEIGHT - 1) == 0
-        && (random(0, STAR_DENSE) == 0)
-        && getPixColorXY(i + 1, HEIGHT - 1) == 0
-        && getPixColorXY(i - 1, HEIGHT - 1) == 0)
-      leds[getPixelNumber(i, HEIGHT - 1)] = CHSV(random(0, 200), SATURATION, 255);
-  }
-
-  // сдвигаем по диагонали
-  for (byte y = 0; y < HEIGHT - 1; y++) {
-    for (byte x = WIDTH - 1; x > 0; x--) {
-      drawPixelXY(x, y, getPixColorXY(x - 1, y + 1));
+void starfallRoutine()
+{modeCode = 15;
+  for (uint8_t x = 0U; x < WIDTH - 1U; x++) // fix error i != 0U
+  {
+    if (!random8(STAR_DENSE) &&
+        !getPixColorXY(wrapX(x), HEIGHT - 1U) &&
+        !getPixColorXY(wrapX(x + 1U), HEIGHT - 1U) &&
+        !getPixColorXY(wrapX(x - 1U), HEIGHT - 1U))
+    {
+      drawPixelXY(x, HEIGHT - 1U, CHSV(random8(), SATURATION, random8(64U, 255U)));
     }
   }
 
-  // уменьшаем яркость левой и верхней линии, формируем "хвосты"
-  for (byte i = HEIGHT / 2; i < HEIGHT; i++) {
-    fadePixel(0, i, TAIL_STEP);
+  // сдвигаем по диагонали
+  for (uint8_t y = 0U; y < HEIGHT - 1U; y++)
+  {
+    for (uint8_t x = 0; x < WIDTH; x++)
+    {
+      drawPixelXY(wrapX(x + 1U), y, getPixColorXY(x, y + 1U));
+    }
   }
-  for (byte i = 0; i < WIDTH / 2; i++) {
-    fadePixel(i, HEIGHT - 1, TAIL_STEP);
+
+  // уменьшаем яркость верхней линии, формируем "хвосты"
+  for (uint8_t i = 0U; i < WIDTH; i++)
+  {
+    fadePixel(i, HEIGHT - 1U, TAIL_STEP);
   }
 }
+
 
 // рандомные гаснущие вспышки
 void sparklesRoutine() {

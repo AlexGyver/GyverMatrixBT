@@ -128,6 +128,7 @@ int AUTOPLAY_PERIOD = 10;     // время между авто сменой р�
 #define RAINBOWDIAGONAL_ROUTINE 19
 #define FIRE_ROUTINE 20
 #define IMAGE_MODE 21
+#define WAVES_ROUTINE 22
 
 #if (MCU_TYPE == 1)
 #define FASTLED_INTERRUPT_RETRY_COUNT 0

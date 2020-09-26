@@ -52,7 +52,7 @@ void effects() {
         break;
       case 8: ballsRoutine();
         break;
-      case 9: //wavesRoutine();  // убран из этой версии, т.к. хлам
+      case 9: WaveRoutine();  // убран из этой версии, т.к. хлам
         break;
       case 10: starfallRoutine();
         break;

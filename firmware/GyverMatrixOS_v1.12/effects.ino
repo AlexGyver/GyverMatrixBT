@@ -7,13 +7,11 @@
 // эффект "шарики"
 #define BALLS_AMOUNT 3    // количество "шариков"
 #define CLEAR_PATH 1      // очищать путь
-#define BALL_TRACK 1      // (0 / 1) - вкл/выкл следы шариков
 #define DRAW_WALLS 0      // режим с рисованием препятствий для шаров (не работает на ESP и STM32)
 #define TRACK_STEP 70     // длина хвоста шарика (чем больше цифра, тем хвост короче)
 
 // эффект "квадратик"
 #define BALL_SIZE 3       // размер шара
-#define RANDOM_COLOR 1    // случайный цвет при отскоке
 
 // эффект "огонь"
 #define SPARKLES 1        // вылетающие угольки вкл выкл
@@ -99,20 +97,20 @@ void ballRoutine() {
     if (coordB[i] < 0) {
       coordB[i] = 0;
       vectorB[i] = -vectorB[i];
-      if (RANDOM_COLOR) ballColor = CHSV(random(0, 9) * 28, 255, 255);
+      ballColor = CHSV(random(0, 9) * 28, 255, 255);
       //vectorB[i] += random(0, 6) - 3;
     }
   }
   if (coordB[0] > (WIDTH - BALL_SIZE) * 10) {
     coordB[0] = (WIDTH - BALL_SIZE) * 10;
     vectorB[0] = -vectorB[0];
-    if (RANDOM_COLOR) ballColor = CHSV(random(0, 9) * 28, 255, 255);
+    ballColor = CHSV(random(0, 9) * 28, 255, 255);
     //vectorB[0] += random(0, 6) - 3;
   }
   if (coordB[1] > (HEIGHT - BALL_SIZE) * 10) {
     coordB[1] = (HEIGHT - BALL_SIZE) * 10;
     vectorB[1] = -vectorB[1];
-    if (RANDOM_COLOR) ballColor = CHSV(random(0, 9) * 28, 255, 255);
+    ballColor = CHSV(random(0, 9) * 28, 255, 255);
     //vectorB[1] += random(0, 6) - 3;
   }
   FastLED.clear();
@@ -163,27 +161,27 @@ int pcnt = 0;
 
 //these values are substracetd from the generated values to give a shape to the animation
 const unsigned char valueMask[8][16] PROGMEM = {
-  {32 , 0  , 0  , 0  , 0  , 0  , 0  , 32 , 32 , 0  , 0  , 0  , 0  , 0  , 0  , 32 },
-  {64 , 0  , 0  , 0  , 0  , 0  , 0  , 64 , 64 , 0  , 0  , 0  , 0  , 0  , 0  , 64 },
-  {96 , 32 , 0  , 0  , 0  , 0  , 32 , 96 , 96 , 32 , 0  , 0  , 0  , 0  , 32 , 96 },
-  {128, 64 , 32 , 0  , 0  , 32 , 64 , 128, 128, 64 , 32 , 0  , 0  , 32 , 64 , 128},
-  {160, 96 , 64 , 32 , 32 , 64 , 96 , 160, 160, 96 , 64 , 32 , 32 , 64 , 96 , 160},
-  {192, 128, 96 , 64 , 64 , 96 , 128, 192, 192, 128, 96 , 64 , 64 , 96 , 128, 192},
-  {255, 160, 128, 96 , 96 , 128, 160, 255, 255, 160, 128, 96 , 96 , 128, 160, 255},
-  {255, 192, 160, 128, 128, 160, 192, 255, 255, 192, 160, 128, 128, 160, 192, 255}
+  {0  , 0  , 0  , 32 , 32 , 0  , 0  , 0  , 0  , 0  , 0  , 32 , 32 , 0  , 0  , 0  },
+  {0  , 0  , 0  , 64 , 64 , 0  , 0  , 0  , 0  , 0  , 0  , 64 , 64 , 0  , 0  , 0  },
+  {0  , 0  , 32 , 96 , 96 , 32 , 0  , 0  , 0  , 0  , 32 , 96 , 96 , 32 , 0  , 0  },
+  {0  , 32 , 64 , 128, 128, 64 , 32 , 0  , 0  , 32 , 64 , 128, 128, 64 , 32 , 0  },
+  {32 , 64 , 96 , 160, 160, 96 , 64 , 32 , 32 , 64 , 96 , 160, 160, 96 , 64 , 32 },
+  {64 , 96 , 128, 192, 192, 128, 96 , 64 , 64 , 96 , 128, 192, 192, 128, 96 , 64 },
+  {96 , 128, 160, 255, 255, 160, 128, 96 , 96 , 128, 160, 255, 255, 160, 128, 96 },
+  {128, 160, 192, 255, 255, 192, 160, 128, 128, 160, 192, 255, 255, 192, 160, 128}
 };
 
 //these are the hues for the fire,
 //should be between 0 (red) to about 25 (yellow)
 const unsigned char hueMask[8][16] PROGMEM = {
-  {1 , 11, 19, 25, 25, 22, 11, 1 , 1 , 11, 19, 25, 25, 22, 11, 1 },
-  {1 , 8 , 13, 19, 25, 19, 8 , 1 , 1 , 8 , 13, 19, 25, 19, 8 , 1 },
-  {1 , 8 , 13, 16, 19, 16, 8 , 1 , 1 , 8 , 13, 16, 19, 16, 8 , 1 },
-  {1 , 5 , 11, 13, 13, 13, 5 , 1 , 1 , 5 , 11, 13, 13, 13, 5 , 1 },
-  {1 , 5 , 11, 11, 11, 11, 5 , 1 , 1 , 5 , 11, 11, 11, 11, 5 , 1 },
-  {0 , 1 , 5 , 8 , 8 , 5 , 1 , 0 , 0 , 1 , 5 , 8 , 8 , 5 , 1 , 0 },
-  {0 , 0 , 1 , 5 , 5 , 1 , 0 , 0 , 0 , 0 , 1 , 5 , 5 , 1 , 0 , 0 },
-  {0 , 0 , 0 , 1 , 1 , 0 , 0 , 0 , 0 , 0 , 0 , 1 , 1 , 0 , 0 , 0 }
+  {25, 22, 11, 1 , 1 , 11, 19, 25, 25, 22, 11, 1 , 1 , 11, 19, 25 },
+  {25, 19, 8 , 1 , 1 , 8 , 13, 19, 25, 19, 8 , 1 , 1 , 8 , 13, 19 },
+  {19, 16, 8 , 1 , 1 , 8 , 13, 16, 19, 16, 8 , 1 , 1 , 8 , 13, 16 },
+  {13, 13, 5 , 1 , 1 , 5 , 11, 13, 13, 13, 5 , 1 , 1 , 5 , 11, 13 },
+  {11, 11, 5 , 1 , 1 , 5 , 11, 11, 11, 11, 5 , 1 , 1 , 5 , 11, 11 },
+  {8 , 5 , 1 , 0 , 0 , 1 , 5 , 8 , 8 , 5 , 1 , 0 , 0 , 1 , 5 , 8  },
+  {5 , 1 , 0 , 0 , 0 , 0 , 1 , 5 , 5 , 1 , 0 , 0 , 0 , 0 , 1 , 5  },
+  {1 , 0 , 0 , 0 , 0 , 0 , 0 , 1 , 1 , 0 , 0 , 0 , 0 , 0 , 0 , 1  }
 };
 
 void fireRoutine() {
@@ -200,7 +198,7 @@ void fireRoutine() {
     pcnt = 0;
   }
   drawFrame(pcnt);
-  pcnt += 30;
+  pcnt += 25;
 }
 
 
@@ -283,31 +281,54 @@ void drawFrame(int pcnt) {
 }
 
 // **************** МАТРИЦА *****************
-void matrixRoutine() {
-  if (loadingFlag) {
-    loadingFlag = false;
-    modeCode = 14;
-    FastLED.clear();
-  }
-  for (byte x = 0; x < WIDTH; x++) {
-    // заполняем случайно верхнюю строку
-    uint32_t thisColor = getPixColorXY(x, HEIGHT - 1);
-    if (thisColor == 0)
-      drawPixelXY(x, HEIGHT - 1, 0x00FF00 * (random(0, 10) == 0));
-    else if (thisColor < 0x002000)
-      drawPixelXY(x, HEIGHT - 1, 0);
-    else
-      drawPixelXY(x, HEIGHT - 1, thisColor - 0x002000);
-  }
-
-  // сдвигаем всё вниз
-  for (byte x = 0; x < WIDTH; x++) {
-    for (byte y = 0; y < HEIGHT - 1; y++) {
-      drawPixelXY(x, y, getPixColorXY(x, y + 1));
+void matrixRoutine()
+{modeCode=14;
+  for (uint8_t x = 0U; x < WIDTH; x++)
+  {
+    // обрабатываем нашу матрицу снизу вверх до второй сверху строчки
+    for (uint8_t y = 0U; y < HEIGHT - 1U; y++)
+    {
+      uint32_t thisColor = getPixColorXY(x, y);                                              // берём цвет нашего пикселя
+      uint32_t upperColor = getPixColorXY(x, y + 1U);                                        // берём цвет пикселя над нашим
+      if (upperColor >= 0x900000 && random(7 * HEIGHT) != 0U)                  // если выше нас максимальная яркость, игнорим этот факт с некой вероятностью или опускаем цепочку ниже
+        drawPixelXY(x, y, upperColor);
+      else if (thisColor == 0U && random((0,10) * HEIGHT) == 0U)  // если наш пиксель ещё не горит, иногда зажигаем новые цепочки
+        //else if (thisColor == 0U && random((100 - modes[currentMode].Scale) * HEIGHT*3) == 0U)  // для длинных хвостов
+        drawPixelXY(x, y, 0x9bf800);
+      else if (thisColor <= 0x050800)                                                        // если наш пиксель почти погас, стараемся сделать затухание медленней
+      {
+        if (thisColor >= 0x030000)
+          drawPixelXY(x, y, 0x020300);
+        else if (thisColor != 0U)
+          drawPixelXY(x, y, 0U);
+      }
+      else if (thisColor >= 0x900000)                                                        // если наш пиксель максимальной яркости, резко снижаем яркость
+        drawPixelXY(x, y, 0x558800);
+      else
+        drawPixelXY(x, y, thisColor - 0x0a1000);                                             // в остальных случаях снижаем яркость на 1 уровень
+      //drawPixelXY(x, y, thisColor - 0x050800);                                             // для длинных хвостов
     }
+    // аналогично обрабатываем верхний ряд пикселей матрицы
+    uint32_t thisColor = getPixColorXY(x, HEIGHT - 1U);
+    if (thisColor == 0U)                                                                     // если наш верхний пиксель не горит, заполняем его с вероятностью .Scale
+    {
+      if (random(0,10) == 0U)
+        drawPixelXY(x, HEIGHT - 1U, 0x9bf800);
+    }
+    else if (thisColor <= 0x050800)                                                          // если наш верхний пиксель почти погас, стараемся сделать затухание медленней
+    {
+      if (thisColor >= 0x030000)
+        drawPixelXY(x, HEIGHT - 1U, 0x020300);
+      else
+        drawPixelXY(x, HEIGHT - 1U, 0U);
+    }
+    else if (thisColor >= 0x900000)                                                          // если наш верхний пиксель максимальной яркости, резко снижаем яркость
+      drawPixelXY(x, HEIGHT - 1U, 0x558800);
+    else
+      drawPixelXY(x, HEIGHT - 1U, thisColor - 0x0a1000);                                     // в остальных случаях снижаем яркость на 1 уровень
+    //drawPixelXY(x, HEIGHT - 1U, thisColor - 0x050800);                                     // для длинных хвостов
   }
 }
-
 
 // ********************************* ШАРИКИ *********************************
 int coord[BALLS_AMOUNT][2];
@@ -333,11 +354,9 @@ void ballsRoutine() {
   }
 
 
-  if (!BALL_TRACK)    // если режим БЕЗ следов шариков
-    FastLED.clear();  // очистить
-  else {              // режим со следами
+             
     fader(TRACK_STEP);
-  }
+  
 
   // движение шариков
   for (byte j = 0; j < BALLS_AMOUNT; j++) {
@@ -384,50 +403,96 @@ void ballsRoutine() {
 }
 
 
-/*
-  // ******************************** СИНУСОИДЫ *******************************
-  #define DEG_TO_RAD 0.017453
-  int t;
-  byte w[WAVES_AMOUNT];
-  byte phi[WAVES_AMOUNT];
-  byte A[WAVES_AMOUNT];
-  CRGB waveColors[WAVES_AMOUNT];
+// ============= ЭФФЕКТ ВОЛНЫ ===============
+// https://github.com/pixelmatix/aurora/blob/master/PatternWave.h
+// Адаптация от (c) SottNick
 
-  void wavesRoutine() {
-  if (loadingFlag) {
+byte waveThetaUpdate = 0;
+byte waveThetaUpdateFrequency = 0;
+byte waveTheta = 0;
+
+byte hueUpdate = 0;
+byte hueUpdateFrequency = 0;
+//    byte hue = 0; будем использовать сдвиг от эффектов Радуга
+
+byte waveRotation = 0;
+uint8_t waveScale = 256 / WIDTH;
+uint8_t waveCount = 1;
+
+void WaveRoutine() {
+  if (loadingFlag)
+  {
     loadingFlag = false;
-    for (byte j = 0; j < WAVES_AMOUNT; j++) {
-      // забиваем случайными данными
-      w[j] = random(17, 25);
-      phi[j] = random(0, 360);
-      A[j] = HEIGHT / 2 * random(4, 11) / 10;
-      waveColors[j] = CHSV(random(0, 9) * 28, 255, 255);
-    }
+    modeCode = 22;
+    waveRotation = random(0, 4);// теперь вместо этого регулятор Масштаб
+    //waveRotation = (modes[currentMode].Scale - 1) / 25U;
+    waveCount = random(1, 3);// теперь вместо этого чётное/нечётное у регулятора Скорость
+    //waveCount = modes[currentMode].Speed % 2;
+    //waveThetaUpdateFrequency = random(1, 2);
+    //hueUpdateFrequency = random(1, 6);
   }
-  if (effectTimer.isReady()) {
 
-    // сдвигаем все пиксели вправо
-    for (int i = WIDTH - 1; i > 0; i--)
-      for (int j = 0; j < HEIGHT; j++)
-        drawPixelXY(i, j, getPixColorXY(i - 1, j));
+  fader(200);
 
-    // увеличиваем "угол"
-    t++;
-    if (t > 360) t = 0;
+  float n = 0;
 
-    // заливаем чёрным левую линию
-    for (byte i = 0; i < HEIGHT; i++) {
-      drawPixelXY(0, i, 0x000000);
-    }
+  switch (waveRotation) {
+    case 0:
+      for (float x = 0; x < WIDTH; x++) {
+        n = (float)quadwave8(x * 2 + waveTheta) / waveScale;
+        drawPixelXY(x, n, ColorFromPalette(RainbowColors_p, hue + x));
+        if (waveCount != 1)
+          drawPixelXY(x, HEIGHT - 1 - n, ColorFromPalette(RainbowColors_p, hue + x));
+      }
+      break;
 
-    // генерируем позицию точки через синус
-    for (byte j = 0; j < WAVES_AMOUNT; j++) {
-      float value = HEIGHT / 2 + (float)A[j] * sin((float)w[j] * t * DEG_TO_RAD + (float)phi[j] * DEG_TO_RAD);
-      leds[getPixelNumber(0, (byte)value)] = waveColors[j];
-    }
+    case 1:
+      for (float y = 0; y < HEIGHT; y++) {
+        n = (float)quadwave8(y * 2 + waveTheta) / waveScale;
+        drawPixelXY(n, y, ColorFromPalette(RainbowColors_p, hue + y));
+        if (waveCount != 1)
+          drawPixelXY(WIDTH - 1 - n, y, ColorFromPalette(RainbowColors_p, hue + y));
+      }
+      break;
+
+    case 2:
+      for (float x = 0; x < WIDTH; x++) {
+        n = (float)quadwave8(x * 2 - waveTheta) / waveScale;
+        drawPixelXY(x, n, ColorFromPalette(RainbowColors_p, hue + x));
+        if (waveCount != 1)
+          drawPixelXY(x, HEIGHT - 1 - n, ColorFromPalette(RainbowColors_p, hue + x));
+      }
+      break;
+
+    case 3:
+      for (float y = 0; y < HEIGHT; y++) {
+        n = (float)quadwave8(y * 2 - waveTheta) / waveScale;
+        drawPixelXY(n, y, ColorFromPalette(RainbowColors_p, hue + y));
+        if (waveCount != 1)
+          drawPixelXY(WIDTH - 1 - n, y, ColorFromPalette(RainbowColors_p, hue + y));
+      }
+      break;
   }
+
+
+  if (waveThetaUpdate >= waveThetaUpdateFrequency) {
+    waveThetaUpdate = 0;
+    waveTheta++;
   }
-*/
+  else {
+    waveThetaUpdate++;
+  }
+
+  if (hueUpdate >= hueUpdateFrequency) {
+    hueUpdate = 0;
+    hue++;
+  }
+  else {
+    hueUpdate++;
+  }
+
+  
+}
 
 // функция плавного угасания цвета для всех пикселей
 void fader(byte step) {
@@ -524,7 +589,7 @@ void sparklesRoutine() {
     byte x = random(0, WIDTH);
     byte y = random(0, HEIGHT);
     if (getPixColorXY(x, y) == 0)
-      leds[getPixelNumber(x, y)] = CHSV(random(0, 255), 255, 255);
+      leds[XY(x, y)] = CHSV(random(0, 255), 255, 255);
   }
   fader(BRIGHT_STEP);
 }

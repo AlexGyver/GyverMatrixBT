@@ -196,10 +196,12 @@ void fillAll(CRGB color) {
 }
 
 // функция отрисовки точки по координатам X Y
-void drawPixelXY(int8_t x, int8_t y, CRGB color) {
-  if (x < 0 || x > WIDTH - 1 || y < 0 || y > HEIGHT - 1) return;
-  int thisPixel = getPixelNumber(x, y) * SEGMENTS;
-  for (byte i = 0; i < SEGMENTS; i++) {
+void drawPixelXY(uint8_t x, uint8_t y, CRGB color)
+{
+  if (x < 0 || x > (WIDTH - 1) || y < 0 || y > (HEIGHT - 1)) return;
+  uint32_t thisPixel = XY((uint8_t)x, (uint8_t)y) * SEGMENTS;
+  for (uint8_t i = 0; i < SEGMENTS; i++)
+  {
     leds[thisPixel + i] = color;
   }
 }
@@ -264,12 +266,17 @@ uint32_t getPixColorXY(int8_t x, int8_t y) {
 #pragma message "Wrong matrix parameters! Set to default"
 
 #endif
+uint16_t XY(uint8_t x, uint8_t y)
+{
+  if (!(THIS_Y & 0x01) || MATRIX_TYPE)               // Even rows run forwards
+    return (THIS_Y * _WIDTH + THIS_X);
+  else
+    return (THIS_Y * _WIDTH + _WIDTH - THIS_X - 1);  // Odd rows run backwards
+}
+
 
 // получить номер пикселя в ленте по координатам
-uint16_t getPixelNumber(int8_t x, int8_t y) {
-  if ((THIS_Y % 2 == 0) || MATRIX_TYPE) {               // если чётная строка
-    return (THIS_Y * _WIDTH + THIS_X);
-  } else {                                              // если нечётная строка
-    return (THIS_Y * _WIDTH + _WIDTH - THIS_X - 1);
-  }
+uint16_t getPixelNumber(uint8_t x, uint8_t y)
+{
+  return XY(x, y);
 }

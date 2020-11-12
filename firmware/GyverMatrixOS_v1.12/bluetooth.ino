@@ -52,7 +52,7 @@ void effects() {
         break;
       case 8: ballsRoutine();
         break;
-      case 9: WaveRoutine();  // убран из этой версии, т.к. хлам
+      case 9: wavesRoutine();  // убран из этой версии, т.к. хлам
         break;
       case 10: starfallRoutine();
         break;
@@ -231,8 +231,8 @@ void parsing() {
           gameSpeed = globalSpeed * 4;      // для игр скорость нужно меньше!
           gameTimer.setInterval(gameSpeed);
         }
-        if (effectsFlag) effectTimer.setInterval(globalSpeed);
-        if (runningFlag) scrollTimer.setInterval(globalSpeed);
+        if (effectsFlag) effectTimer.setInterval(256-globalSpeed);
+        if (runningFlag) scrollTimer.setInterval(256-globalSpeed);
         break;
       case 16:
         if (intData[1] == 0) AUTOPLAY = true;

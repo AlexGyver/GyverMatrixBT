@@ -47,15 +47,16 @@ void effects() {
       case 10: starfallRoutine();              break;
       case 11: sparklesRoutine();              break;
       case 12: patternsRoutine();              break;
-      case 13: madnessNoise();                 break;
-      case 14: cloudNoise();                   break;
-      case 15: lavaNoise();                    break;
-      case 16: plasmaNoise();                  break;
-      case 17: rainbowNoise();                 break;
-      case 18: rainbowStripeNoise();           break;
+      case 13: TLandRoutine();                 break;
+      case 14: madnessNoise();                 break;
+      case 15: cloudNoise();                   break;
+      case 16: lavaNoise();                    break;
+      case 17: plasmaNoise();                  break;
+      case 18: rainbowNoise();                 break;
       case 19: zebraNoise();                   break;
       case 20: forestNoise();                  break;
       case 21: oceanNoise();                   break;
+      case 22: clockRoutine();                 break;
     }
     FastLED.show();
   }
@@ -163,7 +164,14 @@ void parsing() {
           gameTimer.setInterval(globalSpeed * 4);
         }
         else if (intData[1] == 1) effectsFlag = !effectsFlag;
-        else if (intData[1] == 2) variant = !variant;
+        else if (intData[1] == 2) {
+          variant = !variant;
+          #if (USE_MODULE_EFFECTS == 1)
+          patternIdx ++;
+          if (patternIdx >= MAX_PATTERN) patternIdx = 0;
+          animation++;
+          #endif
+        }
         break;
       case 9:
         if (lastMode != 1) loadingFlag = true;    // начать новую игру при переходе со всех режимов кроме рисования

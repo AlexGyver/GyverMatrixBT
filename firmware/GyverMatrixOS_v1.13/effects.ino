@@ -1,9 +1,6 @@
 // эффекты
 
 // **************** НАСТРОЙКИ ЭФФЕКТОВ ****************
-// эффект "синусоиды"
-#define WAVES_AMOUNT 2    // количество синусоид
-
 // эффект "светлячки"
 #define BALLS_AMOUNT 3    // количество "светлячков"
 #define CLEAR_PATH 1      // очищать путь
@@ -13,11 +10,11 @@
 #define BALL_SIZE 2       // размер шара
 
 // эффект "огонь"
-#define FSCALE 20       //масштаб
-#define SPARKLES_NUM  (WIDTH / 8U)
+#define FSCALE 20         //масштаб
+#define SPARKLES_NUM  1   //кол-во летающих углей (WIDTH / 8U)
 
 // эффект "кометы"
-#define TAIL_STEP 100     // длина хвоста кометы
+#define TAIL_STEP 120     // длина хвоста кометы
 #define SATURATION 150    // насыщенность кометы (от 0 до 255)
 #define STAR_DENSE 32     // количество (шанс появления) комет
 
@@ -27,6 +24,9 @@
 
 // эффект "снег"
 #define SNOW_DENSE 10     // плотность снегопада
+
+// эффекты "узоры" и "тикси ленд"
+#define NEW_TIME 120       // время обновления эфффекта(в секундах)
 
 // --------------------- ДЛЯ РАЗРАБОТЧИКОВ ----------------------
 
@@ -100,11 +100,11 @@ void snowRoutine() {
 
 
     // уменьшаем яркость левой и верхней линии, формируем "хвосты"
-    for (byte i = HEIGHT / 2; i < HEIGHT; i++) {
+    for (byte i = 0; i < HEIGHT; i++) {
       fadePixel(0, i, TAIL_STEP);
     }
-    for (byte i = 0; i < WIDTH / 2; i++) {
-      fadePixel(i, HEIGHT - 1, TAIL_STEP);
+    for (byte i = 0; i < WIDTH; i++) {
+      fadePixel(i, HEIGHT - 1, TAIL_STEP / 2 + 10);
     }
   }
 }
@@ -145,7 +145,8 @@ void ballRoutine() {
     ballColor = random(0, 9) * 28;
     //vectorB[1] += random(0, 6) - 3;
   }
-  FastLED.clear();
+  if (variant)FastLED.clear();
+  else fader(75);
   for (byte i = 0; i < BALL_SIZE; i++)
     for (byte j = 0; j < BALL_SIZE; j++)
       leds[getPixelNumber(coordB[0] / 10 + i, coordB[1] / 10 + j)] = CHSV(ballColor, 255, 255);
@@ -340,8 +341,8 @@ void ballsRoutine() {
 
 
 
-  if (variant)  fader(256U - TRACK_STEP);
-  else FastLED.clear();
+  if (variant)  FastLED.clear();
+  else fader(256U - TRACK_STEP);
 
 
   // движение шариков
@@ -454,32 +455,30 @@ void starfallRoutine() {
 
 
   // уменьшаем яркость левой и верхней линии, формируем "хвосты"
-  for (byte i = HEIGHT / 2; i < HEIGHT; i++) {
+  for (byte i = 0; i < HEIGHT; i++) {
     fadePixel(0, i, TAIL_STEP);
   }
-  for (byte i = 0; i < WIDTH / 2; i++) {
-    fadePixel(i, HEIGHT - 1, TAIL_STEP);
+  for (byte i = 0; i < WIDTH; i++) {
+    fadePixel(i, HEIGHT - 1, TAIL_STEP / 2 + 10);
   }
 }
 
-byte ky;
-byte kx;
 // рандомные гаснущие вспышки
 void sparklesRoutine() {
   modeCode = 13;
   for (byte i = 0; i < DENSE; i++) {
-    kx = random(0, WIDTH);
-    ky = random(0, HEIGHT);
-    if (getPixColorXY(kx, ky) == 0)
-      leds[XY(kx, ky)] = CHSV(random(0, 255), 255, 255);
+    byte x = random(0, WIDTH);
+    byte y = random(0, HEIGHT);
+    if (getPixColorXY(x, y) == 0)
+      leds[XY(x, y)] = CHSV(random(0, 255), 255, 255);
   }
   fader(256U - BRIGHT_STEP);
 }
 
-// ------------------Узоры-----------------------
-// https://github.com/vvip-68/GyverPanelWiFi/blob/master/firmware/GyverPanelWiFi_v1.02/patterns.ino
-uint8_t patternIdx = -1;
-int8_t lineIdx = 0;
+#if (USE_MODULE_EFFECTS == 1)
+  // ------------------Узоры-----------------------
+  // https://github.com/vvip-68/GyverPanelWiFi/blob/master/firmware/GyverPanelWiFi_v1.02/patterns.ino
+  int8_t lineIdx = 0;
 
 
 CHSV colorMR[5] = {
@@ -490,7 +489,6 @@ CHSV colorMR[5] = {
   CHSV(0, 255, 255),              // 4 - цвет равен 6 но +64
 };
 
-#include "Patterns.h"
 
 void drawPattern(uint8_t ptrn, uint8_t X, uint8_t Y, uint8_t W, uint8_t H, bool dir) {
 
@@ -547,7 +545,6 @@ void patternsRoutine() {
   if (loadingFlag) {
     loadingFlag = false;
     patternIdx = random8(0U, MAX_PATTERN);
-    //fadeToBlackBy(leds, NUM_LEDS, 25);
     if (variant)
       lineIdx = 9;         // Картинка спускается сверху вниз - отрисовка с нижней строки паттерна (паттерн 10x10)
     else
@@ -557,7 +554,227 @@ void patternsRoutine() {
     colorMR[4].hue = colorMR[3].hue + 96; //(beatsin8(1, 0, 255, 0, 127), 255U, 255U);
   }
   drawPattern(patternIdx, 0, 0, 10, 10, variant);
-  EVERY_N_MILLIS((1005000U / globalSpeed)) {
-    loadingFlag = true;
+  EVERY_N_SECONDS(NEW_TIME) {
+    patternIdx ++;
+    if (patternIdx >= MAX_PATTERN) patternIdx = 0;
   }
 }
+
+// ---------- Эффект "Тикси Ленд"
+// (c)  Martin Kleppe @aemkei, https://github.com/owenmcateer/tixy.land-display
+void TLandRoutine() {
+  modeCode = 23;
+  double t = (double)millis() / map(globalSpeed, 1, 255, 1200, 128);
+  hue++;
+  for ( double x = 0; x < WIDTH; x++) {
+    for ( double y = 0; y < HEIGHT; y++) {
+      processFrame(leds, t, x, y);
+    }
+  }
+  EVERY_N_SECONDS(NEW_TIME) {
+    animation++;
+  }
+}
+void processFrame(CRGB *leds, double t, double x, double y) {
+  double i = (y * 16) + x;
+  double frame = constrain(code(t, i, x, y), -1, 1) * 255;
+
+  if (frame >= 0) {
+    leds[getPixelNumber(x, y)] = CHSV(hue, frame, frame);
+  }
+  else {
+    leds[getPixelNumber(x, y)] = CHSV(hue + 64, abs(frame), abs(frame));
+  }
+}
+
+float code(double t, double i, double x, double y) {
+  //float r = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+
+  switch (animation) {
+    /**
+       Motus Art
+       @motus_art
+    */
+    case 1:
+      // Plasma
+      return sin(x + t) + sin(y + t) + sin(x + y + t) / 3;
+      break;
+
+    case 2:
+      // Up&Down
+      return sin(cos(x) * y / 8 + t);
+      break;
+
+    case 3:
+      return sin(atan((y) / (x)) + t);
+      break;
+
+    /**
+       tixy.land website
+    */
+    case 4:
+      // Emitting rings
+      return sin(t - sqrt(pow((x - 7.5), 2) + pow((y - 6), 2)));
+      break;
+
+    case 5:
+      // Rotation
+      return sin(PI * 2 * atan((y - 8) / (x - 8)) + 5 * t);
+      break;
+
+    case 6:
+      // Vertical fade
+      return sin(y / 8 + t);
+      break;
+
+    case 7:
+      // Smooth noise
+      return cos(t + i + x * y);
+      break;
+
+    case 8:
+      // Waves
+      return sin(x / 2) - sin(x - t) - y + 6;
+      break;
+
+    case 9:
+      // Drop
+      return fmod(8 * t, 13) - hypot(x - 7.5, y - 7.5);
+      break;
+
+    case 10:
+      // Ripples @thespite
+      return sin(t - sqrt(x * x + y * y));
+      break;
+
+    case 11:
+      // Bloop bloop bloop @v21
+      return (x - 8) * (y - 8) - sin(t) * 64;
+      break;
+
+
+    /**
+       Reddit
+    */
+    case 12:
+      // lurkerurke https://www.reddit.com/r/programming/comments/jpqbux/minimal_16x16_dots_coding_environment/gbgcwsn/
+      return sin((x - 7.5) * (y - 7.5) / 5 * t + t);
+      break;
+
+    case 13:
+      // SN0WFAKER https://www.reddit.com/r/programming/comments/jpqbux/minimal_16x16_dots_coding_environment/gbgk7c0/
+      return sin(atan((y - 7.5) / (x - 7.5)) + t * 6);
+      break;
+
+    case 14:
+      // LeadingNegotiation9 https://www.reddit.com/r/programming/comments/jpqbux/minimal_16x16_dots_coding_environment/gbjcoho/
+      return pow(cos(((int)y ^ (int)x) + t), cos((x > y) + t));
+      break;
+
+    case 15:
+      // detunized https://www.reddit.com/r/programming/comments/jpqbux/minimal_16x16_dots_coding_environment/gbgk30l/
+      return sin(y / 8 + t) + x / 16 - 0.5;
+      break;
+
+    case 16:
+      // Andres_A https://www.reddit.com/r/programming/comments/jpqbux/minimal_16x16_dots_coding_environment/gbgzdnj/
+      return 1 - hypot(sin(t) * 9 - x, cos(t) * 9 - y) / 9;
+      break;
+
+
+    /**
+       @akella
+       https://twitter.com/akella/status/1323549082552619008
+    */
+    case 17:
+      return sin(6 * atan2(y - 8, x) + t);
+      break;
+
+    case 18:
+      return sin(i / 5 + (t));
+      break;
+
+    /**
+       Paul Malin
+       https://twitter.com/P_Malin/
+    */
+
+    case 19:
+      // Matrix Rain https://twitter.com/P_Malin/status/1323583013880553472
+      return 1 - fmod((x * x - y + t * (fmod(1 + x * x, 5.0)) * 3.0), 16.0) / 16.0;
+      break;
+
+    case 20:
+      // Burst https://twitter.com/P_Malin/status/1323605999274594304
+      return -4 / ((x - 8) * (x - 8) + (y - 8) * (y - 8) - fmod(t, 1) * 200);
+      break;
+
+    case 21:
+      // Rays
+      return sin(atan2(x, y) * 5 + t * 5);
+      break;
+
+    case 22:
+      // Starfield https://twitter.com/P_Malin/status/1323702220320313346
+      return !((int)(x + t * 50 / (fmod(y * y, 5.9) + 1)) & 15) / (fmod(y * y, 5.9) + 1);
+      break;
+
+    case 23:
+      return sin(3 * atan2(y - 7.5 + sin(t) * 5, x - 7.5 + sin(t / 2) * 5) + t * 5);
+      break;
+
+    case 24:
+      return (y - 8) / 3 - tan(x / 6 + 1.87) * sin(t * 2);
+      break;
+
+    case 25:
+      return (y - 8) / 3 - (sin(x / 4 + t * 4));
+      break;
+
+    case 26:
+      return fmod(i, 4) - fmod(y, 4) + sin(t);
+      break;
+
+    case 27:
+      return cos(sin((x * t * .1)) * PI) + cos(sin(y * t * .1 + (sqrt(abs(cos(x * t * .1))))) * PI);
+      break;
+
+    case 28:
+      return -.4 / (hypot(x - fmod(t, 10), y - fmod(t, 8)) - fmod(t, 2) * 9);
+      break;
+
+    case 29:
+      return sin(x / 3 * sin(t / 3) * 2) + cos(y / 4 * sin(t / 2) * 2);
+      break;
+
+    case 30:
+      return sin(x * x * 3 * i / 1e4 - y / 2 + t * 9);
+      break;
+
+    case 31:
+      return 1 - abs((x - 6) * cos(t) + (y - 6) * sin(t));
+      break;
+
+    case 32:
+      return atan((x - 7.5) * (y - 7.5)) - 2.5 * sin(t);
+      break;
+
+    case 33:
+      return 1 - hypot(sin(t) * 9 - x, cos(t) * 9 - y) / 9;
+      break;
+
+    default:
+      animation = 1;
+      return sin(x + t) + sin(y + t) + sin(x + y + t) / 3;
+      break;
+  }
+}
+
+#else
+void patternsRoutine() {
+  return;
+}
+void TLandRoutine() {
+  return;
+}
+#endif

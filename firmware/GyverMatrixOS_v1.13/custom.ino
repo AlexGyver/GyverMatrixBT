@@ -63,7 +63,7 @@
 //  break;
 
 // не забудьте указать количество режимов для корректного переключения с последнего на первый
-#define MODES_AMOUNT 23   // количество кастомных режимов (которые переключаются сами или кнопкой)
+#define MODES_AMOUNT 21   // количество кастомных режимов (которые переключаются сами или кнопкой)
 
 void customModes() {
   switch (thisMode) {
@@ -75,24 +75,21 @@ void customModes() {
     case 4 : lavaNoise();                        break;
     case 5 : plasmaNoise();                      break;
     case 6 : rainbowNoise();                     break;
-    case 7 : rainbowStripeNoise();               break;
-    case 8 : zebraNoise();                       break;
-    case 9 : forestNoise();                      break;
-    case 10: oceanNoise();                       break;
-    case 11: snowRoutine();                      break;
-    case 12: sparklesRoutine();                  break;
-    case 13: matrixRoutine();                    break;
-    case 14: starfallRoutine();                  break;
-    case 15: ballRoutine();                      break;
-    case 16: ballsRoutine();                     break;
-    case 17: rainbowRoutine();                   break;
-    case 18: rainbowDiagonalRoutine();           break;
-    case 19: fireRoutine();                      break;
-    case 20: snakeRoutine();                     break;
-    case 21: tetrisRoutine();                    break;
-    case 22: arkanoidRoutine();                  break;
-
-  }
+    case 7 : zebraNoise();                       break;             
+    case 8 : forestNoise();                      break;
+    case 9 : oceanNoise();                       break;
+    case 10: snowRoutine();                      break;
+    case 11: sparklesRoutine();                  break;
+    case 12: matrixRoutine();                    break;
+    case 13: starfallRoutine();                  break;
+    case 14: ballRoutine();                      break;
+    case 15: ballsRoutine();                     break;
+    case 16: rainbowRoutine();                   break;
+    case 17: rainbowDiagonalRoutine();           break;
+    case 18: fireRoutine();                      break;
+    case 19: patternsRoutine();                  break;
+    case 20: TLandRoutine();                     break; 
+ }
 
 }
 

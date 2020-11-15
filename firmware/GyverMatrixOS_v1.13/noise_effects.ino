@@ -54,20 +54,12 @@ void madnessNoise() {
 void rainbowNoise() {
   if (loadingFlag) {
     loadingFlag = false;
-    currentPalette = RainbowColors_p;
     scale = RAINBOW_SCALE; colorLoop = 1;
-     
-    modeCode = 7;
-  }
-  fillNoiseLED();
-}
-void rainbowStripeNoise() {
-  if (loadingFlag) {
-    loadingFlag = false;
+    if(variant)
+    currentPalette = RainbowColors_p;
+    else
     currentPalette = RainbowStripeColors_p;
-    scale = RAINBOW_S_SCALE; colorLoop = 1;
-     
-    modeCode = 8;
+    modeCode = 7;
   }
   fillNoiseLED();
 }
@@ -82,7 +74,7 @@ void zebraNoise() {
     currentPalette[8] = CRGB::White;
     currentPalette[12] = CRGB::White;
     scale = ZEBRA_SCALE; colorLoop = 1;
-     
+
     modeCode = 9;
   }
   fillNoiseLED();
@@ -92,7 +84,7 @@ void forestNoise() {
     loadingFlag = false;
     currentPalette = ForestColors_p;
     scale = FOREST_SCALE; colorLoop = 0;
-     
+
     modeCode = 10;
   }
   fillNoiseLED();
@@ -102,7 +94,7 @@ void oceanNoise() {
     loadingFlag = false;
     currentPalette = OceanColors_p;
     scale = OCEAN_SCALE; colorLoop = 0;
-     
+
     modeCode = 11;
   }
 
@@ -113,7 +105,7 @@ void plasmaNoise() {
     loadingFlag = false;
     currentPalette = PartyColors_p;
     scale = PLASMA_SCALE; colorLoop = 1;
-     
+
     modeCode = 6;
   }
   fillNoiseLED();
@@ -123,7 +115,7 @@ void cloudNoise() {
     loadingFlag = false;
     currentPalette = CloudColors_p;
     scale = CLOUD_SCALE; colorLoop = 0;
-     
+
     modeCode = 4;
   }
   fillNoiseLED();
@@ -131,11 +123,13 @@ void cloudNoise() {
 void lavaNoise() {
   if (loadingFlag) {
     loadingFlag = false;
-    currentPalette = LavaColors_p;
     scale = LAVA_SCALE; colorLoop = 0;
-     
     modeCode = 5;
   }
+  if (variant)
+    currentPalette = HeatColors_p;
+  else
+    currentPalette = LavaColors_p;
   fillNoiseLED();
 }
 
@@ -217,9 +211,6 @@ void plasmaNoise() {
   return;
 }
 void rainbowNoise() {
-  return;
-}
-void rainbowStripeNoise() {
   return;
 }
 void zebraNoise() {

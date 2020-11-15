@@ -59,16 +59,17 @@ int AUTOPLAY_PERIOD = 10;     // время между авто сменой р�
 #define USE_BUTTONS 0         // использовать физические кнопки управления играми (0 нет, 1 да)
 #define BT_MODE 1             // использовать блютус (0 нет, 1 да)
 #define USE_NOISE_EFFECTS 1   // крутые полноэкранные эффекты (0 нет, 1 да) СИЛЬНО ЖРУТ ПАМЯТЬ!!!11
+#define USE_MODULE_EFFECTS 1  // крутые модульные эффекты (0 нет, 1 да) СИЛЬНО ЖРУТ ПАМЯТЬ!!!11
 #define USE_FONTS 1           // использовать буквы (бегущая строка) (0 нет, 1 да)
 #define USE_CLOCK 0           // использовать часы (0 нет, 1 да)
 
 // игры
-#define USE_SNAKE 1           // игра змейка (0 нет, 1 да)
-#define USE_TETRIS 1          // игра тетрис (0 нет, 1 да)
+#define USE_SNAKE 0           // игра змейка (0 нет, 1 да)
+#define USE_TETRIS 0          // игра тетрис (0 нет, 1 да)
 #define USE_MAZE 0            // игра лабиринт (0 нет, 1 да)
 #define USE_RUNNER 0          // игра бегалка-прыгалка (0 нет, 1 да)
 #define USE_FLAPPY 0          // игра flappy bird (0 нет, 1 да)
-#define USE_ARKAN 1           // игра арканоид (0 нет, 1 да)
+#define USE_ARKAN 0           // игра арканоид (0 нет, 1 да)
 
 // ****************** ПИНЫ ПОДКЛЮЧЕНИЯ *******************
 // Arduino (Nano, Mega)
@@ -116,6 +117,7 @@ int AUTOPLAY_PERIOD = 10;     // время между авто сменой р�
 #define RAINBOWDIAGONAL_ROUTINE 19
 #define FIRE_ROUTINE 20
 #define PATTERNS_ROUTINE 22
+#define TLAND_ROUTINE 23
 #define IMAGE_MODE 21
 
 
@@ -146,9 +148,15 @@ boolean dotFlag;
 byte modeCode;    // 0 бегущая, 1 часы, 2 игры, 3 нойс маднесс и далее, 21 гифка или картинка,
 boolean fullTextFlag = false;
 boolean clockSet = false;
+uint8_t patternIdx = -1;
+byte animation = 0;
 
 #if (USE_FONTS == 1)
 #include "fonts.h"
+#endif
+
+#if (USE_MODULE_EFFECTS == 1)
+#include "Patterns.h"
 #endif
 
 uint32_t autoplayTime = ((long)AUTOPLAY_PERIOD * 1000);

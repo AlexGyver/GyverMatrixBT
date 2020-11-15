@@ -195,6 +195,7 @@ void fillAll(CRGB color) {
   }
 }
 
+
 // функция отрисовки точки по координатам X Y
 void drawPixelXY(uint8_t x, uint8_t y, CRGB color)
 {
@@ -279,4 +280,19 @@ uint16_t XY(uint8_t x, uint8_t y)
 uint16_t getPixelNumber(uint8_t x, uint8_t y)
 {
   return XY(x, y);
+}
+
+void shiftDown() {
+  for (byte x = 0; x < WIDTH; x++) {
+    for (byte y = 0; y < HEIGHT - 1; y++) {
+      drawPixelXY(x, y, getPixColorXY(x, y + 1));
+    }
+  }
+}
+void shiftUp() {
+  for (byte x = 0; x < WIDTH; x++) {
+    for (byte y = HEIGHT; y > 0; y--) {
+      drawPixelXY(x, y, getPixColorXY(x, y - 1));
+    }
+  }
 }

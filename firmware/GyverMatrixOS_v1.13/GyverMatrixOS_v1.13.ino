@@ -115,8 +115,8 @@ int AUTOPLAY_PERIOD = 10;     // время между авто сменой р�
 #define RAINBOW_ROUTINE 18
 #define RAINBOWDIAGONAL_ROUTINE 19
 #define FIRE_ROUTINE 20
+#define PATTERNS_ROUTINE 22
 #define IMAGE_MODE 21
-#define WAVES_ROUTINE 22
 
 
 #include "FastLED.h"
@@ -130,6 +130,7 @@ byte globalSpeed = 200;
 uint32_t globalColor = 0x00ff00;   // цвет при запуске зелёный
 byte breathBrightness;
 boolean loadingFlag = true;
+boolean variant;
 byte frameNum;
 int gameSpeed = DEMO_GAME_SPEED;
 boolean gameDemo = true;

@@ -46,7 +46,7 @@ void effects() {
       case 9 : ballsRoutine();                 break;
       case 10: starfallRoutine();              break;
       case 11: sparklesRoutine();              break;
-      case 12: wavesRoutine();                 break;
+      case 12: patternsRoutine();              break;
       case 13: madnessNoise();                 break;
       case 14: cloudNoise();                   break;
       case 15: lavaNoise();                    break;
@@ -163,6 +163,7 @@ void parsing() {
           gameTimer.setInterval(globalSpeed * 4);
         }
         else if (intData[1] == 1) effectsFlag = !effectsFlag;
+        else if (intData[1] == 2) variant = !variant;
         break;
       case 9:
         if (lastMode != 1) loadingFlag = true;    // начать новую игру при переходе со всех режимов кроме рисования

@@ -1,25 +1,25 @@
 // эффекты
 
 // **************** НАСТРОЙКИ ЭФФЕКТОВ ****************
-// эффект "синусоиды" - ОТКЛЮЧЕН
+// эффект "синусоиды"
 #define WAVES_AMOUNT 2    // количество синусоид
 
-// эффект "шарики"
-#define BALLS_AMOUNT 3    // количество "шариков"
+// эффект "светлячки"
+#define BALLS_AMOUNT 3    // количество "светлячков"
 #define CLEAR_PATH 1      // очищать путь
-#define TRACK_STEP 70     // длина хвоста шарика (чем больше цифра, тем хвост короче)
+#define TRACK_STEP 120    // длина хвоста светлячка (чем больше цифра, тем хвост короче)
 
 // эффект "квадратик"
 #define BALL_SIZE 2       // размер шара
 
 // эффект "огонь"
-#define FSCALE 32       //масштаб
+#define FSCALE 20       //масштаб
 #define SPARKLES_NUM  (WIDTH / 8U)
 
 // эффект "кометы"
 #define TAIL_STEP 100     // длина хвоста кометы
-#define SATURATION 150    // насыщенность кометы (от 0 до 255) 0=Метель
-#define STAR_DENSE 60     // количество (шанс появления) комет
+#define SATURATION 150    // насыщенность кометы (от 0 до 255)
+#define STAR_DENSE 32     // количество (шанс появления) комет
 
 // эффект "конфетти"
 #define DENSE 3           // плотность конфетти
@@ -58,35 +58,68 @@ void colorsRoutine() {
 
 // *********** снегопад 2.0 ***********
 void snowRoutine() {
-  modeCode = 12;
+  if (loadingFlag) {
+    loadingFlag = false;
+    modeCode = 12;
+  }
   // сдвигаем всё вниз
-  for (byte x = 0; x < WIDTH; x++) {
-    for (byte y = 0; y < HEIGHT - 1; y++) {
-      drawPixelXY(x, y, getPixColorXY(x, y + 1));
+
+  if (variant) {
+    shiftDown();
+    for (byte x = 0; x < WIDTH; x++) {
+      // заполняем случайно верхнюю строку
+      // а также не даём двум блокам по вертикали вместе быть
+      if (getPixColorXY(x, HEIGHT - 2) == 0 && (random(0, SNOW_DENSE) == 0))
+        drawPixelXY(x, HEIGHT - 1, 0xE0FFFF - 0x101010 * random(0, 4));
+      else
+        drawPixelXY(x, HEIGHT - 1, 0x000000);
     }
   }
+  else {
+    // заполняем головами комет левую и верхнюю линию
+    for (byte i = 0; i < HEIGHT; i++) {
+      if (getPixColorXY(0, i) == 0
+          && (random(0, SNOW_DENSE) == 0)
+          && getPixColorXY(0, i + 1) == 0
+          && getPixColorXY(0, i - 1) == 0)
+        leds[getPixelNumber(0, i)] = CHSV(0, 0, 255);
+    }
+    for (byte i = 0; i < WIDTH; i++) {
+      if (getPixColorXY(i, HEIGHT - 1) == 0
+          && (random(0, SNOW_DENSE) == 0)
+          && getPixColorXY(i + 1, HEIGHT - 1) == 0
+          && getPixColorXY(i - 1, HEIGHT - 1) == 0)
+        leds[getPixelNumber(i, HEIGHT - 1)] = CHSV(0, 0, 255);
+    }
+    // сдвигаем по диагонали
+    for (byte y = 0; y < HEIGHT - 1; y++) {
+      for (byte x = WIDTH - 1; x > 0; x--) {
+        drawPixelXY(x, y, getPixColorXY(x - 1, y + 1));
+      }
+    }
 
-  for (byte x = 0; x < WIDTH; x++) {
-    // заполняем случайно верхнюю строку
-    // а также не даём двум блокам по вертикали вместе быть
-    if (getPixColorXY(x, HEIGHT - 2) == 0 && (random(0, SNOW_DENSE) == 0))
-      drawPixelXY(x, HEIGHT - 1, 0xE0FFFF - 0x101010 * random(0, 4));
-    else
-      drawPixelXY(x, HEIGHT - 1, 0x000000);
+
+    // уменьшаем яркость левой и верхней линии, формируем "хвосты"
+    for (byte i = HEIGHT / 2; i < HEIGHT; i++) {
+      fadePixel(0, i, TAIL_STEP);
+    }
+    for (byte i = 0; i < WIDTH / 2; i++) {
+      fadePixel(i, HEIGHT - 1, TAIL_STEP);
+    }
   }
 }
 
 // ***************************** БЛУДНЫЙ КУБИК *****************************
 int coordB[2];
 int8_t vectorB[2];
-CRGB ballColor;
+byte ballColor;
 
 void ballRoutine() {
   if (loadingFlag) {
     for (byte i = 0; i < 2; i++) {
       coordB[i] = WIDTH / 2 * 10;
       vectorB[i] = random(8, 20);
-      ballColor = CHSV(random(0, 9) * 28, 255, 255);
+      ballColor = random(0, 9) * 28;
     }
     modeCode = 16;
     loadingFlag = false;
@@ -96,39 +129,38 @@ void ballRoutine() {
     if (coordB[i] < 0) {
       coordB[i] = 0;
       vectorB[i] = -vectorB[i];
-      ballColor = CHSV(random(0, 9) * 28, 255, 255);
+      ballColor = random(0, 9) * 28;
       //vectorB[i] += random(0, 6) - 3;
     }
   }
   if (coordB[0] > (WIDTH - BALL_SIZE) * 10) {
     coordB[0] = (WIDTH - BALL_SIZE) * 10;
     vectorB[0] = -vectorB[0];
-    ballColor = CHSV(random(0, 9) * 28, 255, 255);
+    ballColor = random(0, 9) * 28;
     //vectorB[0] += random(0, 6) - 3;
   }
   if (coordB[1] > (HEIGHT - BALL_SIZE) * 10) {
     coordB[1] = (HEIGHT - BALL_SIZE) * 10;
     vectorB[1] = -vectorB[1];
-    ballColor = CHSV(random(0, 9) * 28, 255, 255);
+    ballColor = random(0, 9) * 28;
     //vectorB[1] += random(0, 6) - 3;
   }
   FastLED.clear();
   for (byte i = 0; i < BALL_SIZE; i++)
     for (byte j = 0; j < BALL_SIZE; j++)
-      leds[getPixelNumber(coordB[0] / 10 + i, coordB[1] / 10 + j)] = ballColor;
+      leds[getPixelNumber(coordB[0] / 10 + i, coordB[1] / 10 + j)] = CHSV(ballColor, 255, 255);
 }
 
 
 // *********** радуга заливка ***********
 void rainbowRoutine() {
   if (loadingFlag) {
-    brightnessDirection = !brightnessDirection;
-    loadingFlag=false;
+    loadingFlag = false;
     modeCode = 18;
   }
 
   hue += 3;
-  if (brightnessDirection) {
+  if (variant) {
     for (byte i = 0; i < WIDTH; i++) {
       CHSV thisColor = CHSV((byte)(hue + i * float(255 / WIDTH)), 255, 255);
       for (byte j = 0; j < HEIGHT; j++)
@@ -160,11 +192,10 @@ void rainbowDiagonalRoutine() {
 // *********** радуга активных светодиодов (рисунка) ***********
 void rainbowColorsRoutine() {
   if (loadingFlag) {
-    brightnessDirection = !brightnessDirection;
-    loadingFlag=false;
+    loadingFlag = false;
   }
   hue++;
-  if (brightnessDirection) {
+  if (variant) {
     for (byte i = 0; i < WIDTH; i++) {
       CHSV thisColor = CHSV((byte)(hue + i * float(255 / WIDTH)), 255, 255);
       for (byte j = 0; j < HEIGHT; j++)
@@ -186,44 +217,44 @@ void rainbowColorsRoutine() {
 //сильно по мотивам https://pastebin.com/RG0QGzfK
 //Perlin noise fire procedure by Yaroslaw Turbin
 //https://www.reddit.com/r/FastLED/comments/hgu16i/my_fire_effect_implementation_based_on_perlin/
-uint16_t ff_x, ff_y, ff_z;    
+uint16_t ff_x, ff_y, ff_z;
 uint8_t deltaHue, deltaHue2; // ещё пара таких же, когда нужно много
 uint8_t spark[2][SPARKLES_NUM];
 uint8_t shiftHue[HEIGHT];
 uint8_t deltaValue;
 uint8_t step;
 
-void fireRoutine(){
+void fireRoutine() {
   if (loadingFlag) {
     loadingFlag = false;
     deltaValue = FSCALE * 0.0899;// /100.0F * ((sizeof(palette_arr) /sizeof(TProgmemRGBPalette16 *))-0.01F));
     deltaValue = (((FSCALE - 1U) % 11U + 1U) << 4U) - 8U; // ширина языков пламени (масштаб шума Перлина)
     deltaHue = map(deltaValue, 8U, 168U, 8U, 84U); // высота языков пламени должна уменьшаться не так быстро, как ширина
-    step = map(255U-deltaValue, 87U, 247U, 4U, 32U); // вероятность смещения искорки по оси ИКС
+    step = map(255U - deltaValue, 87U, 247U, 4U, 32U); // вероятность смещения искорки по оси ИКС
     for (uint8_t j = 0; j < HEIGHT; j++) {
       shiftHue[j] = (HEIGHT - 1 - j) * 255 / (HEIGHT - 1); // init colorfade table
     }
 
     for (uint8_t i = 0; i < SPARKLES_NUM; i++) {
-        spark[1][i] = random8(HEIGHT);
-        spark[0][i] = random8(WIDTH);
+      spark[1][i] = random8(HEIGHT);
+      spark[0][i] = random8(WIDTH);
     }
   }
   for (uint8_t i = 0; i < WIDTH; i++) {
     for (uint8_t j = 0; j < HEIGHT; j++) {
-      leds[XY(i,HEIGHT-1U-j)] = ColorFromPalette(HeatColors_p, qsub8(inoise8(i * deltaValue, (j+ff_y+random8(2)) * deltaHue, ff_z), shiftHue[j]), 255U);
-    } 
+      leds[XY(i, HEIGHT - 1U - j)] = ColorFromPalette(HeatColors_p, qsub8(inoise8(i * deltaValue, (j + ff_y + random8(2)) * deltaHue, ff_z), shiftHue[j]), 255U);
+    }
   }
 
   //вставляем искорки из отдельного массива
   for (uint8_t i = 0; i < SPARKLES_NUM; i++) {
-    //leds[XY(trackingObjectPosX[i],trackingObjectPosY[i])] += ColorFromPalette(*curPalette, random(156, 255));   //trackingObjectHue[i] 
-    if (spark[1][i] > 3U){
+    //leds[XY(trackingObjectPosX[i],trackingObjectPosY[i])] += ColorFromPalette(*curPalette, random(156, 255));   //trackingObjectHue[i]
+    if (spark[1][i] > 3U) {
       leds[XY(spark[0][i], spark[1][i])] = leds[XY(spark[0][i], 3U)];
-      leds[XY(spark[0][i], spark[1][i])].fadeToBlackBy( spark[1][i]*2U );
+      leds[XY(spark[0][i], spark[1][i])].fadeToBlackBy( spark[1][i] * 2U );
     }
     spark[1][i]++;
-    if (spark[1][i] >= HEIGHT){
+    if (spark[1][i] >= HEIGHT) {
       spark[1][i] = random8(4U);
       spark[0][i] = random8(WIDTH);
     }
@@ -284,10 +315,10 @@ void matrixRoutine()
   }
 }
 
-// ********************************* ШАРИКИ *********************************
+// ********************************* СВЕТЛЯЧКИ *********************************
 int coord[BALLS_AMOUNT][2];
 int8_t vector[BALLS_AMOUNT][2];
-CRGB ballColors[BALLS_AMOUNT];
+byte ballColors[BALLS_AMOUNT];
 
 void ballsRoutine() {
   if (loadingFlag) {
@@ -303,18 +334,19 @@ void ballsRoutine() {
       coord[j][1] = HEIGHT / 2 * 10;
       random(0, 2) ? sign = 1 : sign = -1;
       vector[j][1] = random(4, 15) * sign;
-      ballColors[j] = CHSV(random(0, 9) * 28, 255, 255);
+      ballColors[j] = random(0, 9) * 28;
     }
   }
 
 
 
-  fader(TRACK_STEP);
+  if (variant)  fader(256U - TRACK_STEP);
+  else FastLED.clear();
 
 
   // движение шариков
   for (byte j = 0; j < BALLS_AMOUNT; j++) {
-
+    ballColors[j] ++;
     // движение шариков
     for (byte i = 0; i < 2; i++) {
       coord[j][i] += vector[j][i];
@@ -332,73 +364,31 @@ void ballsRoutine() {
       coord[j][1] = (HEIGHT - 1) * 10;
       vector[j][1] = -vector[j][1];
     }
-    leds[getPixelNumber(coord[j][0] / 10, coord[j][1] / 10)] =  ballColors[j];
+    leds[getPixelNumber(coord[j][0] / 10, coord[j][1] / 10)] =  CHSV(ballColors[j], 255, 255);
   }
 }
 
 
-// ******************************** СИНУСОИДЫ *******************************
-#define DEG_TO_RAD 0.017453
-int t;
-byte w[WAVES_AMOUNT];
-byte phi[WAVES_AMOUNT];
-byte A[WAVES_AMOUNT];
-byte waveColors[WAVES_AMOUNT];
 
-void wavesRoutine() {
-  if (loadingFlag) {
-    loadingFlag = false;
-    modeCode = 22;
-    for (byte j = 0; j < WAVES_AMOUNT; j++) {
-      // забиваем случайными данными
-      w[j] = random(17, 25);
-      phi[j] = random(0, 360);
-      A[j] = HEIGHT / 2 * random(4, 11) / 10;
-      waveColors[j] = random(0, 9) * 28;
-    }
-  }
-  // сдвигаем все пиксели вправо
-  for (int i = WIDTH - 1; i > 0; i--)
-    for (int j = 0; j < HEIGHT; j++)
-      drawPixelXY(i, j, getPixColorXY(i - 1, j));
-
-  // увеличиваем "угол"
-  t++;
-  if (t > 360) t = 0;
-
-  // заливаем чёрным левую линию
-  for (byte i = 0; i < HEIGHT; i++) {
-    drawPixelXY(0, i, 0x000000);
-  }
-
-  // генерируем позицию точки через синус
-  for (byte j = 0; j < WAVES_AMOUNT; j++) {
-    waveColors[j] ++;
-    float value = HEIGHT / 2 + (float)A[j] * sin((float)w[j] * t * DEG_TO_RAD + (float)phi[j] * DEG_TO_RAD);
-    drawPixelXY(0, (uint8_t)value, CHSV(waveColors[j], 255, 255));
-  }
+void fader(uint8_t step)                                   // плавное угасание всех пикселей
+{
+  fadeToBlackBy (leds, NUM_LEDS, 255U - step);
 }
-void dimAll(uint8_t value, CRGB *LEDarray = leds) {
-  //for (uint16_t i = 0; i < NUM_LEDS; i++) {
-  //  leds[i].nscale8(value); //fadeToBlackBy
-  //}
-  // теперь короткий вариант
-  nscale8(LEDarray, NUM_LEDS, value);
-  //fadeToBlackBy(LEDarray, NUM_LEDS, 255U - value); // эквивалент  
-}
+void fadePixel(uint8_t i, uint8_t j, uint8_t step)          // новый фейдер
+{
+  int32_t pixelNum = XY(i, j);
+  if (getPixColor(pixelNum) == 0U) return;
 
-// функция плавного угасания цвета для всех пикселей
-void fader(byte step) {
-  for (byte i = 0; i < WIDTH; i++) {
-    for (byte j = 0; j < HEIGHT; j++) {
-      fadePixel(i, j, step);
-    }
-  }
-}
-void fadePixel(byte i, byte j, byte step) {     // новый фейдер
-  int pixelNum = getPixelNumber(i, j);
-  if (getPixColor(pixelNum) == 0) return;
+  if (leds[pixelNum].r >= 30U ||
+      leds[pixelNum].g >= 30U ||
+      leds[pixelNum].b >= 30U)
+  {
     leds[pixelNum].fadeToBlackBy(step);
+  }
+  else
+  {
+    leds[pixelNum] = 0U;
+  }
 }
 
 /*
@@ -435,16 +425,19 @@ void fadePixel(byte i, byte j, byte step) {     // новый фейдер
 
 // ********************* ЗВЕЗДОПАД ******************
 void starfallRoutine() {
-  modeCode = 15;
+  if (loadingFlag) {
+    loadingFlag = false;
+    modeCode = 15;
+  }
   // заполняем головами комет левую и верхнюю линию
-  for (byte i = HEIGHT / 2; i < HEIGHT; i++) {
+  for (byte i = 0; i < HEIGHT; i++) {
     if (getPixColorXY(0, i) == 0
         && (random(0, STAR_DENSE) == 0)
         && getPixColorXY(0, i + 1) == 0
         && getPixColorXY(0, i - 1) == 0)
       leds[getPixelNumber(0, i)] = CHSV(random(0, 200), SATURATION, 255);
   }
-  for (byte i = 0; i < WIDTH / 2; i++) {
+  for (byte i = 0; i < WIDTH; i++) {
     if (getPixColorXY(i, HEIGHT - 1) == 0
         && (random(0, STAR_DENSE) == 0)
         && getPixColorXY(i + 1, HEIGHT - 1) == 0
@@ -459,6 +452,7 @@ void starfallRoutine() {
     }
   }
 
+
   // уменьшаем яркость левой и верхней линии, формируем "хвосты"
   for (byte i = HEIGHT / 2; i < HEIGHT; i++) {
     fadePixel(0, i, TAIL_STEP);
@@ -468,15 +462,102 @@ void starfallRoutine() {
   }
 }
 
-
+byte ky;
+byte kx;
 // рандомные гаснущие вспышки
 void sparklesRoutine() {
   modeCode = 13;
   for (byte i = 0; i < DENSE; i++) {
-    byte x = random(0, WIDTH);
-    byte y = random(0, HEIGHT);
-    if (getPixColorXY(x, y) == 0)
-      leds[XY(x, y)] = CHSV(random(0, 255), 255, 255);
+    kx = random(0, WIDTH);
+    ky = random(0, HEIGHT);
+    if (getPixColorXY(kx, ky) == 0)
+      leds[XY(kx, ky)] = CHSV(random(0, 255), 255, 255);
   }
-    dimAll(256U - BRIGHT_STEP);
+  fader(256U - BRIGHT_STEP);
+}
+
+// ------------------Узоры-----------------------
+// https://github.com/vvip-68/GyverPanelWiFi/blob/master/firmware/GyverPanelWiFi_v1.02/patterns.ino
+uint8_t patternIdx = -1;
+int8_t lineIdx = 0;
+
+
+CHSV colorMR[5] = {
+  CHSV(0, 0, 0),              // 0 - Black
+  CHSV(HUE_RED, 255, 255),    // 1 - Red
+  CHSV(0, 0, 220),            // 2 - White
+  CHSV(0, 255, 255),              // 3 - плавно меняеться в цикле (фон)
+  CHSV(0, 255, 255),              // 4 - цвет равен 6 но +64
+};
+
+#include "Patterns.h"
+
+void drawPattern(uint8_t ptrn, uint8_t X, uint8_t Y, uint8_t W, uint8_t H, bool dir) {
+
+
+  if (dir)
+    shiftDown();
+  else
+    shiftUp();
+
+
+  uint8_t y = dir ? (HEIGHT - 1) : 0;
+
+  // Если ширина паттерна не кратна ширине матрицы - отрисовывать со сдвигом? чтобы рисунок был максимально по центру
+  int8_t offset_x = -((WIDTH % W) / 2) + 3;
+
+  for (uint8_t x = 0; x < WIDTH + W; x++) {
+    int8_t xx = offset_x + x;
+    if (xx >= 0 && xx < (int8_t)WIDTH) {
+      uint8_t in = (uint8_t)pgm_read_byte(&(patterns[ptrn][lineIdx][x % 10]));
+      CHSV color = colorMR[in];
+      CHSV color2 = color.v != 0 ? CHSV(color.h, color.s, 255) : color;
+      drawPixelXY(xx, y, color2);
+    }
+  }
+  if (dir) {
+    lineIdx = (lineIdx > 0) ? (lineIdx - 1) : (H - 1);
+  } else {
+    lineIdx = (lineIdx < H - 1) ? (lineIdx + 1) : 0;
+  }
+}
+
+
+
+// Отрисовка указанной картинки с размерами WxH в позиции XY
+void drawPicture_XY(uint8_t iconIdx, uint8_t X, uint8_t Y, uint8_t W, uint8_t H) {
+  if (loadingFlag) {
+    loadingFlag = false;
+  }
+
+  for (byte x = 0; x < W; x++) {
+    for (byte y = 0; y < H; y++) {
+      uint8_t in = (uint8_t)pgm_read_byte(&(patterns[iconIdx][y][x]));
+      if (in != 0) {
+        CHSV color = colorMR[in];
+        CHSV color2 = color.v != 0 ? CHSV(color.h, color.s, 255) : color;
+        drawPixelXY(X + x, Y + H - y, color2);
+      }
+    }
+  }
+}
+void patternsRoutine() {
+
+
+  if (loadingFlag) {
+    loadingFlag = false;
+    patternIdx = random8(0U, MAX_PATTERN);
+    //fadeToBlackBy(leds, NUM_LEDS, 25);
+    if (variant)
+      lineIdx = 9;         // Картинка спускается сверху вниз - отрисовка с нижней строки паттерна (паттерн 10x10)
+    else
+      lineIdx = 0;         // Картинка поднимается сверху вниз - отрисовка с верхней строки паттерна
+    // Цвета с индексом 6 и 7 - случайные, определяются в момент настройки эффекта
+    colorMR[3] = CHSV(random8(), 255U, 255U);
+    colorMR[4].hue = colorMR[3].hue + 96; //(beatsin8(1, 0, 255, 0, 127), 255U, 255U);
+  }
+  drawPattern(patternIdx, 0, 0, 10, 10, variant);
+  EVERY_N_MILLIS((1005000U / globalSpeed)) {
+    loadingFlag = true;
+  }
 }

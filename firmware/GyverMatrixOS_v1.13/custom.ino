@@ -63,14 +63,14 @@
 //  break;
 
 // не забудьте указать количество режимов для корректного переключения с последнего на первый
-#define MODES_AMOUNT 21   // количество кастомных режимов (которые переключаются сами или кнопкой)
-
+#define MODES_AMOUNT 2   // количество кастомных режимов (которые переключаются сами или кнопкой)
+//если вы выключили демо, он все равно будет воосприводится при включении
 void customModes() {
   switch (thisMode) {
 
-    case 0 : fillString("Led", 1);               break;
-    case 1 : fillString("Matrix", 2);            break;
-    case 2 : madnessNoise();                     break;
+    case 0 : fillString("Connecting", 1);              break;
+    case 1 : fillString("To Bluetooth ...", 2);        break;
+    /*case 2 : madnessNoise();                     break;
     case 3 : cloudNoise();                       break;
     case 4 : lavaNoise();                        break;
     case 5 : plasmaNoise();                      break;
@@ -88,7 +88,7 @@ void customModes() {
     case 17: rainbowDiagonalRoutine();           break;
     case 18: fireRoutine();                      break;
     case 19: patternsRoutine();                  break;
-    case 20: TLandRoutine();                     break; 
+    case 20: TLandRoutine();                     break;*/ 
  }
 
 }
@@ -252,7 +252,7 @@ void customRoutine() {
       }
     }
   } else {
-    if (idleTimer.isReady()) {      // таймер холостого режима
+    if (idleTimer.isReady() && !IDLE_TIME == 0) {      // таймер холостого режима
       idleState = true;
       autoplayTimer = millis();
       gameDemo = true;

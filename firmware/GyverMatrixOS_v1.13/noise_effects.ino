@@ -55,12 +55,14 @@ void rainbowNoise() {
   if (loadingFlag) {
     loadingFlag = false;
     scale = RAINBOW_SCALE; colorLoop = 1;
-    if(variant)
-    currentPalette = RainbowColors_p;
-    else
-    currentPalette = RainbowStripeColors_p;
     modeCode = 7;
   }
+  if (variant){
+    currentPalette = RainbowStripeColors_p;
+    scale = RAINBOW_S_SCALE;
+}else{
+    currentPalette = RainbowColors_p;
+    scale = RAINBOW_SCALE;}
   fillNoiseLED();
 }
 void zebraNoise() {

@@ -110,7 +110,7 @@ timerMinim gifTimer(D_GIF_SPEED);
 // Внимание! Если размер матрицы не совпадает с исходным размером матрицы в скетче
 // (если вы только что  его скачали), то нужно удалить/закомментировать данные функции!
 //
-/*
+#if (USE_ANIMATION == 1)
   // показать картинку
   void imageRoutine1() {
   if (loadingFlag) {
@@ -122,12 +122,18 @@ timerMinim gifTimer(D_GIF_SPEED);
   void animation1() {
   if (gifTimer.isReady()) {
     frameNum++;
-    if (frameNum >= size(framesArray)) frameNum = 0;
+    if (frameNum >= FRAMES) frameNum = 0;//sizeof - полная фигня size-не пошел
     loadImage(framesArray[frameNum]);
   }
   }
-*/
-
+#else
+void imageRoutine1() {
+  return;
+}
+void animation1() {
+  return;
+}
+#endif
 // ********************* ОСНОВНОЙ ЦИКЛ РЕЖИМОВ *******************
 #if (SMOOTH_CHANGE == 1)
 byte fadeMode = 4;

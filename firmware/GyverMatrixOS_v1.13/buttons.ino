@@ -6,7 +6,7 @@ buttonMinim bt_left(BUTT_LEFT, false);
 buttonMinim bt_right(BUTT_RIGHT, false);
 buttonMinim bt_up(BUTT_UP, false);
 buttonMinim bt_down(BUTT_DOWN, false);
-
+buttonMinim bt_set(BUTT_SET, false);
 
 timerMinim stepTimer(100);
 #endif

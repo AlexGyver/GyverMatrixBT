@@ -57,6 +57,7 @@ void effects() {
       case 20: forestNoise();                  break;
       case 21: oceanNoise();                   break;
       case 22: clockRoutine();                 break;
+      case 23: animation1();                   break;
     }
     FastLED.show();
   }

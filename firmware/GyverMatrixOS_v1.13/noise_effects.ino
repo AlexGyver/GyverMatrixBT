@@ -42,9 +42,11 @@ void madnessNoise() {
   fillnoise8();
   for (int i = 0; i < WIDTH; i++) {
     for (int j = 0; j < HEIGHT; j++) {
-      CRGB thisColor = CHSV(noise[j][i], 255, noise[i][j]);
-      drawPixelXY(i, j, thisColor);   //leds[getPixelNumber(i, j)] = CHSV(noise[j][i], 255, noise[i][j]);
-
+      if (variant){
+      drawPixelXY(i, j, CHSV(noise[j][i], noise[i][j], noise[i][j]));
+      }else{
+      drawPixelXY(i, j, CHSV(noise[j][i], 255, noise[i][j]));}
+     
       // You can also explore other ways to constrain the hue used, like below
       // leds[XY(i,j)] = CHSV(ihue + (noise[j][i]>>2),255,noise[i][j]);
     }

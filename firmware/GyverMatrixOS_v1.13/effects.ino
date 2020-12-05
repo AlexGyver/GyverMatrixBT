@@ -738,7 +738,10 @@ float code(double t, double i, double x, double y) {
 
 #else
 void patternsRoutine() {
-  return;
+if (variant)
+  shiftDown();
+  else
+  shiftUp();
 }
 void TLandRoutine() {
   return;

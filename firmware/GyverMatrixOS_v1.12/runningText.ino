@@ -71,10 +71,10 @@ void drawLetter(uint8_t index, uint8_t letter, int16_t offset, uint32_t color) {
 
       // рисуем столбец (i - горизонтальная позиция, j - вертикальная)
       if (TEXT_DIRECTION) {
-        if (thisBit) leds[getPixelNumber(offset + i, TEXT_HEIGHT + j)] = letterColor;
+        if (thisBit) drawPixelXY(offset + i, TEXT_HEIGHT + j, letterColor);
         else drawPixelXY(offset + i, TEXT_HEIGHT + j, 0x000000);
       } else {
-        if (thisBit) leds[getPixelNumber(i, offset + TEXT_HEIGHT + j)] = letterColor;
+        if (thisBit) drawPixelXY(i, offset + TEXT_HEIGHT + j, letterColor);
         else drawPixelXY(i, offset + TEXT_HEIGHT + j, 0x000000);
       }
 

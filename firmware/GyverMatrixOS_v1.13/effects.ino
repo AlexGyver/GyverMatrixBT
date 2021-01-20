@@ -566,7 +566,7 @@ void patternsRoutine() {
 // (c)  Martin Kleppe @aemkei, https://github.com/owenmcateer/tixy.land-display
 void TLandRoutine() {
   modeCode = 23;
-  double t = (double)millis() / map(globalSpeed, 1, 255, 1200, 128);
+  double t = (double)millis() / 1000;
   hue++;
   for ( double x = 0; x < WIDTH; x++) {
     for ( double y = 0; y < HEIGHT; y++) {
@@ -584,10 +584,10 @@ void processFrame(CRGB *leds, double t, double x, double y) {
   double frame = constrain(code(t, i, x, y), -1, 1) * 255;
 
   if (frame >= 0) {
-    leds[getPixelNumber(x, HEIGHT - 1 - y)] = CHSV(hue, frame, frame);
+    leds[getPixelNumber(x, HEIGHT - 1 - y)].setRGB(frame, frame, frame);
   }
   else {
-    leds[getPixelNumber(x, HEIGHT - 1 - y)] = CHSV(hue + 64, abs(frame), abs(frame));
+    leds[getPixelNumber(x, HEIGHT - 1 - y)].setRGB(-frame, 0, 0);
   }
 }
 
@@ -613,7 +613,7 @@ float code(double t, double i, double x, double y) {
       break;
 
     case 23:
-      return sin(cos(y) * t) * cos(sin(x) * t); 
+      return sin(cos(y) * t) * cos(sin(x) * t);
       break;
 
 
@@ -738,10 +738,7 @@ float code(double t, double i, double x, double y) {
 
 #else
 void patternsRoutine() {
-if (variant)
-  shiftDown();
-  else
-  shiftUp();
+  return;
 }
 void TLandRoutine() {
   return;

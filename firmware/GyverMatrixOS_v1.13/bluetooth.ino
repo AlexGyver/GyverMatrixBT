@@ -112,7 +112,7 @@ void parsing() {
       idleState = false;
 
       if (!BTcontrol) {
-        gameSpeed = globalSpeed * 4;
+        gameSpeed = (256-globalSpeed) * 4;
         gameTimer.setInterval(gameSpeed);
         BTcontrol = true;
       }
@@ -162,7 +162,7 @@ void parsing() {
           breathBrightness = globalBrightness;
           FastLED.setBrightness(globalBrightness);    // возвращаем яркость
           globalSpeed = intData[3];
-          gameTimer.setInterval(globalSpeed * 4);
+          gameTimer.setInterval((256-globalSpeed) * 4);
         }
         else if (intData[1] == 1) effectsFlag = !effectsFlag;
         else if (intData[1] == 2) {
@@ -180,7 +180,7 @@ void parsing() {
         //gameFlag = true;
         game = intData[1];
         globalSpeed = intData[2];
-        gameSpeed = globalSpeed * 4;
+        gameSpeed = (256-globalSpeed) * 4;
         gameTimer.setInterval(gameSpeed);
         break;
       case 10:
@@ -204,7 +204,7 @@ void parsing() {
         break;
       case 15: globalSpeed = intData[1];
         if (gameFlag) {
-          gameSpeed = globalSpeed * 4;      // для игр скорость нужно меньше!
+          gameSpeed = (256-globalSpeed) * 4;      // для игр скорость нужно меньше!
           gameTimer.setInterval(gameSpeed);
         }
         if (effectsFlag) effectTimer.setInterval(256 - globalSpeed);

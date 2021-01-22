@@ -7,12 +7,6 @@ buttonMinim bt_right(BUTT_RIGHT, false);
 buttonMinim bt_up(BUTT_UP, false);
 buttonMinim bt_down(BUTT_DOWN, false);
 
-#if (MCU_TYPE == 1)   // у esp8266 пин 8 подтянут к земле
-buttonMinim bt_set(BUTT_SET, true);
-#else
-buttonMinim bt_set(BUTT_SET, false);
-#endif
-
 
 timerMinim stepTimer(100);
 #endif

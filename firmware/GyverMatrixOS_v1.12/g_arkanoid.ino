@@ -1,11 +1,11 @@
 // игра "arkanoid"
 
 // **************** НАСТРОЙКИ ARKAN ****************
-#define SHELF_LENGTH 5    // длина полки
+#define SHELF_LENGTH 3    // длина полки
 #define VELOCITY 5        // скорость шара
 #define BALL_SPEED 50     // период интегрирования
 
-#define BLOCKS_H 4        // высота кучи блоков
+#define BLOCKS_H 2        // высота кучи блоков
 #define LINE_NUM 8        // количество "линий" с блоками других уровней
 #define LINE_MAX 4        // макс. длина линии
 

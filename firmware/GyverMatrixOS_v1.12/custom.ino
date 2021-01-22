@@ -47,7 +47,8 @@
     fillString("Ваш текст", цвет);    // цвет вида 0x00ff25 или CRGB::Red и проч. цвета
     fillString("Ваш текст", 1);       // радужный перелив текста
     fillString("Ваш текст", 2);       // каждая буква случайным цветом!
-
+    fillString((String)hrs + ":" + (String)mins, Режим); //Часы строкой
+    
   Рисунки и анимации:
     loadImage(<название массива>);    // основная функция вывода картинки
     imageRoutine1();                  // пример использования
@@ -62,68 +63,57 @@
 //  break;
 
 // не забудьте указать количество режимов для корректного переключения с последнего на первый
-#define MODES_AMOUNT 28   // количество кастомных режимов (которые переключаются сами или кнопкой)
+#define MODES_AMOUNT 23   // количество кастомных режимов (которые переключаются сами или кнопкой)
 
 void customModes() {
   switch (thisMode) {
 
-    case 0: fillString("КРАСНЫЙ", CRGB::Red);
+    case 0: fillString((String)hrs + ":" + (String)mins, 1);
       break;
-    case 1: fillString("РАДУГА", 1);
+    case 1: fillString("Led Matrix", 2);
       break;
-    case 2: fillString("RGB LED", 2);
+    case 2: madnessNoise();
       break;
-    case 3: madnessNoise();
+    case 3: cloudNoise();
       break;
-    case 4: cloudNoise();
+    case 4: lavaNoise();
       break;
-    case 5: lavaNoise();
+    case 5: plasmaNoise();
       break;
-    case 6: plasmaNoise();
+    case 6: rainbowNoise();
       break;
-    case 7: rainbowNoise();
+    case 7: rainbowStripeNoise();
       break;
-    case 8: rainbowStripeNoise();
+    case 8: zebraNoise();
       break;
-    case 9: zebraNoise();
+    case 9: forestNoise();
       break;
-    case 10: forestNoise();
+    case 10: oceanNoise();
       break;
-    case 11: oceanNoise();
+    case 11: snowRoutine();
       break;
-    case 12: snowRoutine();
+    case 12: sparklesRoutine();
       break;
-    case 13: sparklesRoutine();
+    case 13: matrixRoutine();
       break;
-    case 14: matrixRoutine();
+    case 14: starfallRoutine();
       break;
-    case 15: starfallRoutine();
+    case 15: ballRoutine();
       break;
-    case 16: ballRoutine();
+    case 16: ballsRoutine();
       break;
-    case 17: ballsRoutine();
+    case 17: rainbowRoutine();
       break;
-    case 18: rainbowRoutine();
+    case 18: rainbowDiagonalRoutine();
       break;
-    case 19: rainbowDiagonalRoutine();
+    case 19: fireRoutine();
       break;
-    case 20: fireRoutine();
+    case 20: snakeRoutine();
       break;
-    case 21: snakeRoutine();
+    case 21: tetrisRoutine();
       break;
-    case 22: tetrisRoutine();
+    case 22: arkanoidRoutine();
       break;
-    case 23: mazeRoutine();
-      break;
-    case 24: runnerRoutine();
-      break;
-    case 25: flappyRoutine();
-      break;
-    case 26: arkanoidRoutine();
-      break;
-    case 27: clockRoutine();
-      break;
-
 
   }
 
@@ -158,7 +148,7 @@ timerMinim gifTimer(D_GIF_SPEED);
   void animation1() {
   if (gifTimer.isReady()) {
     frameNum++;
-    if (frameNum >= sizeof(framesArray)) frameNum = 0;
+    if (frameNum >= size(framesArray)) frameNum = 0;
     loadImage(framesArray[frameNum]);
   }
   }

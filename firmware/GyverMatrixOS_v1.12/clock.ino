@@ -4,7 +4,7 @@
 #define OVERLAY_CLOCK 1     // часы на фоне всех эффектов и игр. Жрёт SRAM память!
 #define CLOCK_ORIENT 0      // 0 горизонтальные, 1 вертикальные
 #define CLOCK_X 0           // позиция часов по X (начало координат - левый нижний угол)
-#define CLOCK_Y 6           // позиция часов по Y (начало координат - левый нижний угол)
+#define CLOCK_Y 0           // позиция часов по Y (начало координат - левый нижний угол)
 #define COLOR_MODE 2        // Режим цвета часов
 //                          0 - заданные ниже цвета
 //                          1 - радужная смена (каждая цифра)
@@ -111,7 +111,7 @@ void drawClock(byte hrs, byte mins, boolean dots, byte X, byte Y) {
 
 void clockRoutine() {
   if (loadingFlag) {
-#if (MCU_TYPE == 0 || MCU_TYPE == 1)
+#if (MCU_TYPE == 0)
     DateTime now = rtc.now();
     secs = now.second();
     mins = now.minute();
@@ -146,7 +146,7 @@ void clockTicker() {
       if (secs > 59) {      // каждую минуту
         secs = 0;
         mins++;
-#if (MCU_TYPE == 0 || MCU_TYPE == 1)
+#if (MCU_TYPE == 0)
         DateTime now = rtc.now();
         secs = now.second();
         mins = now.minute();

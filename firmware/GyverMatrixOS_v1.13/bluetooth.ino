@@ -72,6 +72,7 @@ void games() {
     case 3: runnerRoutine();   break;
     case 4: flappyRoutine();   break;
     case 5: arkanoidRoutine(); break;
+    case 6: runRoutine();      break;
   }
 }
 

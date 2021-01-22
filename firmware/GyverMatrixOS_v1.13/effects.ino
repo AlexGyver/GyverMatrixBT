@@ -109,46 +109,47 @@ void snowRoutine() {
 }
 
 // ***************************** БЛУДНЫЙ КУБИК *****************************
-int coordB[2];
-int8_t vectorB[2];
-byte ballColor;
+int coord[BALLS_AMOUNT][2];
+int8_t vector[BALLS_AMOUNT][2];
+byte ballColors[BALLS_AMOUNT];
+
 
 void ballRoutine() {
   if (loadingFlag) {
     for (byte i = 0; i < 2; i++) {
-      coordB[i] = WIDTH / 2 * 10;
-      vectorB[i] = random(8, 20);
-      ballColor = random(0, 9) * 28;
+      coord[0][i] = WIDTH / 2 * 10;
+      vector[0][i] = random(8, 20);
+      ballColors[0] = random(0, 9) * 28;
     }
     modeCode = 16;
     loadingFlag = false;
   }
   for (byte i = 0; i < 2; i++) {
-    coordB[i] += vectorB[i];
-    if (coordB[i] < 0) {
-      coordB[i] = 0;
-      vectorB[i] = -vectorB[i];
-      ballColor = random(0, 9) * 28;
-      //vectorB[i] += random(0, 6) - 3;
+    coord[0][i] += vector[0][i];
+    if (coord[0][i] < 0) {
+      coord[0][i] = 0;
+      vector[0][i] = -vector[0][i];
+      ballColors[0] = random(0, 9) * 28;
+      //vector[0][i] += random(0, 6) - 3;
     }
   }
-  if (coordB[0] > (WIDTH - BALL_SIZE) * 10) {
-    coordB[0] = (WIDTH - BALL_SIZE) * 10;
-    vectorB[0] = -vectorB[0];
-    ballColor = random(0, 9) * 28;
-    //vectorB[0] += random(0, 6) - 3;
+  if (coord[0][0] > (WIDTH - BALL_SIZE) * 10) {
+    coord[0][0] = (WIDTH - BALL_SIZE) * 10;
+    vector[0][0] = -vector[0][0];
+    ballColors[0] = random(0, 9) * 28;
+    //vector[0][0] += random(0, 6) - 3;
   }
-  if (coordB[1] > (HEIGHT - BALL_SIZE) * 10) {
-    coordB[1] = (HEIGHT - BALL_SIZE) * 10;
-    vectorB[1] = -vectorB[1];
-    ballColor = random(0, 9) * 28;
-    //vectorB[1] += random(0, 6) - 3;
+  if (coord[0][1] > (HEIGHT - BALL_SIZE) * 10) {
+    coord[0][1] = (HEIGHT - BALL_SIZE) * 10;
+    vector[0][1] = -vector[0][1];
+    ballColors[0] = random(0, 9) * 28;
+    //vector[0][1] += random(0, 6) - 3;
   }
   if (variant)fader(75);
   else FastLED.clear();
   for (byte i = 0; i < BALL_SIZE; i++)
     for (byte j = 0; j < BALL_SIZE; j++)
-      leds[getPixelNumber(coordB[0] / 10 + i, coordB[1] / 10 + j)] = CHSV(ballColor, 255, 255);
+      leds[getPixelNumber(coord[0][0] / 10 + i, coord[0][1] / 10 + j)] = CHSV(ballColors[0], 255, 255);
 }
 
 
@@ -317,10 +318,6 @@ void matrixRoutine()
 }
 
 // ********************************* СВЕТЛЯЧКИ *********************************
-int coord[BALLS_AMOUNT][2];
-int8_t vector[BALLS_AMOUNT][2];
-byte ballColors[BALLS_AMOUNT];
-
 void ballsRoutine() {
   if (loadingFlag) {
     modeCode = 17;
@@ -566,7 +563,7 @@ void patternsRoutine() {
 // (c)  Martin Kleppe @aemkei, https://github.com/owenmcateer/tixy.land-display
 void TLandRoutine() {
   modeCode = 23;
-  double t = (double)millis() / 1000;
+  double t = map(globalSpeed, 1, 255, 1200, 128);
   hue++;
   for ( double x = 0; x < WIDTH; x++) {
     for ( double y = 0; y < HEIGHT; y++) {

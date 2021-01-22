@@ -68,9 +68,10 @@ int AUTOPLAY_PERIOD = 10;     // время между авто сменой р�
 #define USE_SNAKE 1           // игра змейка (0 нет, 1 да)
 #define USE_TETRIS 0          // игра тетрис (0 нет, 1 да)
 #define USE_MAZE 0            // игра лабиринт (0 нет, 1 да)
-#define USE_RUNNER 0          // игра бегалка-прыгалка (0 нет, 1 да)
+#define USE_DINO 0            // игра дино (0 нет, 1 да)
 #define USE_FLAPPY 0          // игра flappy bird (0 нет, 1 да)
 #define USE_ARKAN 0           // игра арканоид (0 нет, 1 да)
+#define USE_RUNNER 1            // игра бегалка (0 нет, 1 да)
 
 // ****************** ПИНЫ ПОДКЛЮЧЕНИЯ *******************
 // Arduino (Nano, Mega)
@@ -123,6 +124,7 @@ int AUTOPLAY_PERIOD = 10;     // время между авто сменой р�
 #define FIRE_ROUTINE 20
 #define PATTERNS_ROUTINE 22
 #define TLAND_ROUTINE 23
+#define GAME_ROUTINE 24
 #define IMAGE_MODE 21
 
 

@@ -15,7 +15,6 @@ uint32_t color = 0x000088;
 byte color_index;
 byte linesToClear;
 boolean down_flag = true;
-byte lineCleanCounter;
 
 // самая важная часть программы! Координаты пикселей фигур
 //  0 - палка
@@ -163,7 +162,7 @@ void checkAndClear() {
       }
     }
     if (linesToClear > 0) {             // если найденных полных строк больше 1
-      lineCleanCounter += linesToClear;   // суммируем количество очищенных линий (игровой "счёт")
+      Score += linesToClear;   // суммируем количество очищенных линий (игровой "счёт")
 
       // заполняем весь блок найденных строк белым цветом слева направо
       for (byte X = 0; X < WIDTH; X++) {
@@ -214,10 +213,10 @@ void gameOverTetris() {
   FastLED.clear();
   FastLED.show();
 
-  // тут можно вывести счёт lineCleanCounter
-  if (!gameDemo) displayScore(lineCleanCounter);
+  // тут можно вывести счёт Score
+  if (!gameDemo) displayScore(Score);
   delay(1000);
-  lineCleanCounter = 0;   // сброс счёта
+  Score = 0;   // сброс счёта
   FastLED.clear();
   FastLED.show();
   delay(20);

@@ -27,6 +27,8 @@ void bluetoothRoutine() {
     if (runningFlag) fillString(runningText, globalColor);   // бегущая строка
     if (gameFlag) games();                      // игры
     if (effectsFlag) effects();                 // эффекты
+    filter();
+    FastLED.show();
   }
 }
 
@@ -34,32 +36,28 @@ void bluetoothRoutine() {
 void effects() {
   if (effectTimer.isReady()) {
     switch (effect) {
-      case 0 : brightnessRoutine();            break;
-      case 1 : colorsRoutine();                break;
-      case 2 : rainbowColorsRoutine();         break;
-      case 3 : rainbowRoutine();               break;
-      case 4 : rainbowDiagonalRoutine();       break;
-      case 5 : fireRoutine();                  break;
-      case 6 : snowRoutine();                  break;
-      case 7 : matrixRoutine();                break;
-      case 8 : ballRoutine();                  break;
-      case 9 : ballsRoutine();                 break;
-      case 10: starfallRoutine();              break;
-      case 11: sparklesRoutine();              break;
-      case 12: patternsRoutine();              break;
-      case 13: TLandRoutine();                 break;
-      case 14: madnessNoise();                 break;
-      case 15: cloudNoise();                   break;
-      case 16: lavaNoise();                    break;
-      case 17: plasmaNoise();                  break;
-      case 18: rainbowNoise();                 break;
-      case 19: zebraNoise();                   break;
-      case 20: forestNoise();                  break;
-      case 21: oceanNoise();                   break;
-      case 22: clockRoutine();                 break;
-      case 23: animation1();                   break;
+      case 1 : rainbowRoutine();               break;
+      case 2 : rainbowDiagonalRoutine();       break;
+      case 3 : fireRoutine();                  break;
+      case 4 : snowRoutine();                  break;
+      case 5 : matrixRoutine();                break;
+      case 6 : ballRoutine();                  break;
+      case 7 : ballsRoutine();                 break;
+      case 8 : starfallRoutine();              break;
+      case 9 : sparklesRoutine();              break;
+      case 10: patternsRoutine();              break;
+      case 11: TLandRoutine();                 break;
+      case 12: madnessNoise();                 break;
+      case 13: cloudNoise();                   break;
+      case 14: lavaNoise();                    break;
+      case 15: plasmaNoise();                  break;
+      case 16: rainbowNoise();                 break;
+      case 17: zebraNoise();                   break;
+      case 18: forestNoise();                  break;
+      case 19: oceanNoise();                   break;
+      case 20: clockRoutine();                 break;
+      case 21: animation1();                   break;
     }
-    FastLED.show();
   }
 }
 
@@ -104,6 +102,10 @@ void parsing() {
     13 - кнопка влево
     14 - пауза в игре
     15 - скорость $8 скорость;
+    16 - Работа с Демо режимом
+    17 - время смены ефектов
+    18 - 1 Часы 2 Минуты
+    19 - Фильтр(Дыхание, Радуга, Цвета)
   */
   if (recievedFlag) {      // если получены данные
     recievedFlag = false;
@@ -113,7 +115,7 @@ void parsing() {
       idleState = false;
 
       if (!BTcontrol) {
-        gameSpeed = (256-globalSpeed) * 4;
+        gameSpeed = (256 - globalSpeed) * 4;
         gameTimer.setInterval(gameSpeed);
         BTcontrol = true;
       }
@@ -142,8 +144,7 @@ void parsing() {
         drawPixelXY(intData[2], intData[3], gammaCorrection(globalColor));
         // делаем обновление матрицы каждую строчку, чтобы реже обновляться
         // и не пропускать пакеты данных (потому что отправка на большую матрицу занимает много времени)
-        if (prevY != intData[3] || ( (intData[3] == 0) && (intData[2] == WIDTH - 1) ) ) {
-          prevY = intData[3];
+        if ((intData[3] == 0) && (intData[2] == WIDTH - 1)) {
           FastLED.show();
         }
         break;
@@ -152,8 +153,7 @@ void parsing() {
         // строка принимается в переменную runningText
         break;
       case 7:
-        if (intData[1] == 1) runningFlag = true;
-        if (intData[1] == 0) runningFlag = false;
+        runningFlag = !runningFlag;
         break;
       case 8:
         if (intData[1] == 0) {
@@ -163,17 +163,9 @@ void parsing() {
           breathBrightness = globalBrightness;
           FastLED.setBrightness(globalBrightness);    // возвращаем яркость
           globalSpeed = intData[3];
-          gameTimer.setInterval((256-globalSpeed) * 4);
+          gameTimer.setInterval((256 - globalSpeed) * 4);
         }
         else if (intData[1] == 1) effectsFlag = !effectsFlag;
-        else if (intData[1] == 2) {
-          variant = !variant;
-          #if (USE_MODULE_EFFECTS == 1)
-          patternIdx ++;
-          if (patternIdx >= MAX_PATTERN) patternIdx = 0;
-          animation++;
-          #endif
-        }
         break;
       case 9:
         if (lastMode != 1) loadingFlag = true;    // начать новую игру при переходе со всех режимов кроме рисования
@@ -181,7 +173,7 @@ void parsing() {
         //gameFlag = true;
         game = intData[1];
         globalSpeed = intData[2];
-        gameSpeed = (256-globalSpeed) * 4;
+        gameSpeed = (256 - globalSpeed) * 4;
         gameTimer.setInterval(gameSpeed);
         break;
       case 10:
@@ -205,20 +197,36 @@ void parsing() {
         break;
       case 15: globalSpeed = intData[1];
         if (gameFlag) {
-          gameSpeed = (256-globalSpeed) * 4;      // для игр скорость нужно меньше!
+          gameSpeed = (256 - globalSpeed) * 4;    // для игр скорость нужно меньше!
           gameTimer.setInterval(gameSpeed);
         }
         if (effectsFlag) effectTimer.setInterval(256 - globalSpeed);
         if (runningFlag) scrollTimer.setInterval(256 - globalSpeed);
         break;
       case 16:
-        if (intData[1] == 0) AUTOPLAY = true;
-        else if (intData[1] == 1) AUTOPLAY = false;
+        if (intData[1] == 0) {
+          idleState = true;
+          autoplayTimer = millis();
+          gameDemo = true;
+
+          gameSpeed = DEMO_GAME_SPEED;
+          gameTimer.setInterval(gameSpeed);
+
+          loadingFlag = true;
+          BTcontrol = false;
+          FastLED.clear();
+          FastLED.show();
+        }
+        else if (intData[1] == 1) AUTOPLAY = !AUTOPLAY;
         else if (intData[1] == 2) prevMode();
         else if (intData[1] == 3) nextMode();
         break;
       case 17: autoplayTime = ((long)intData[1] * 1000);
         autoplayTimer = millis();
+        break;
+      case 18: hrs = intData[1]; mins = intData[2];
+        break;
+      case 19: variant = intData[1];
         break;
     }
     lastMode = intData[0];  // запомнить предыдущий режим
@@ -269,6 +277,7 @@ void parsing() {
     }
   }
 }
+
 
 // hex string to uint32_t
 uint32_t HEXtoInt(String hexValue) {

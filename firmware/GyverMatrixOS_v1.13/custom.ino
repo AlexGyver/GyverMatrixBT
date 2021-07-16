@@ -48,7 +48,7 @@
     fillString("Ваш текст", 1);       // радужный перелив текста
     fillString("Ваш текст", 2);       // каждая буква случайным цветом!
     fillString((String)hrs + ":" + (String)mins, Режим); //Часы строкой
-    
+
   Рисунки и анимации:
     loadImage(<название массива>);    // основная функция вывода картинки
     imageRoutine1();                  // пример использования
@@ -70,26 +70,26 @@ void customModes() {
 
     case 0 : fillString("Connecting", 1);              break;
     case 1 : fillString("To Bluetooth ...", 2);        break;
-    /*case 2 : madnessNoise();                     break;
-    case 3 : cloudNoise();                       break;
-    case 4 : lavaNoise();                        break;
-    case 5 : plasmaNoise();                      break;
-    case 6 : rainbowNoise();                     break;
-    case 7 : zebraNoise();                       break;             
-    case 8 : forestNoise();                      break;
-    case 9 : oceanNoise();                       break;
-    case 10: snowRoutine();                      break;
-    case 11: sparklesRoutine();                  break;
-    case 12: matrixRoutine();                    break;
-    case 13: starfallRoutine();                  break;
-    case 14: ballRoutine();                      break;
-    case 15: ballsRoutine();                     break;
-    case 16: rainbowRoutine();                   break;
-    case 17: rainbowDiagonalRoutine();           break;
-    case 18: fireRoutine();                      break;
-    case 19: patternsRoutine();                  break;
-    case 20: TLandRoutine();                     break;*/ 
- }
+      /*case 2 : madnessNoise();                     break;
+        case 3 : cloudNoise();                       break;
+        case 4 : lavaNoise();                        break;
+        case 5 : plasmaNoise();                      break;
+        case 6 : rainbowNoise();                     break;
+        case 7 : zebraNoise();                       break;
+        case 8 : forestNoise();                      break;
+        case 9 : oceanNoise();                       break;
+        case 10: snowRoutine();                      break;
+        case 11: sparklesRoutine();                  break;
+        case 12: matrixRoutine();                    break;
+        case 13: starfallRoutine();                  break;
+        case 14: ballRoutine();                      break;
+        case 15: ballsRoutine();                     break;
+        case 16: rainbowRoutine();                   break;
+        case 17: rainbowDiagonalRoutine();           break;
+        case 18: fireRoutine();                      break;
+        case 19: patternsRoutine();                  break;
+        case 20: TLandRoutine();                     break;*/
+  }
 
 }
 
@@ -111,21 +111,21 @@ timerMinim gifTimer(D_GIF_SPEED);
 // (если вы только что  его скачали), то нужно удалить/закомментировать данные функции!
 //
 #if (USE_ANIMATION == 1)
-  // показать картинку
-  void imageRoutine1() {
+// показать картинку
+void imageRoutine1() {
   if (loadingFlag) {
     loadingFlag = false;
     loadImage(frame00);
   }
-  }
+}
 
-  void animation1() {
+void animation1() {
   if (gifTimer.isReady()) {
     frameNum++;
     if (frameNum >= FRAMES) frameNum = 0;//sizeof - полная фигня size-не пошел
     loadImage(framesArray[frameNum]);
   }
-  }
+}
 #else
 void imageRoutine1() {
   return;
@@ -276,23 +276,30 @@ void customRoutine() {
 
 void timeSet(boolean type, boolean dir) {    // type: 0-часы, 1-минуты, dir: 0-уменьшить, 1-увеличить
   if (type) {
-    if (dir) hrs++;
-    else hrs--;
-  } else {
-    if (dir) mins++;
-    else mins--;
-    if (mins > 59) {
-      mins = 0;
-      hrs++;
+    if (dir) {
+      if (hrs == 23) hrs = 0;
+      else hrs++;
     }
-    if (mins < 0) {
-      mins = 59;
-      hrs--;
+    else {
+      if (hrs == 0) hrs = 23;
+      else hrs--;
+    }
+  } else {
+    if (dir) {
+      if (mins == 59) {
+        mins = 0;
+        hrs++;
+      } else mins++;
+    }
+    else {
+      if (mins == 0) {
+        mins = 59;
+        hrs--;
+      } else mins--;
     }
   }
-  if (hrs > 23) hrs = 0;
-  if (hrs < 0) hrs = 23;
 }
+
 
 void btnsModeChange() {
 #if (USE_BUTTONS == 1)
@@ -315,7 +322,7 @@ void btnsModeChange() {
       clockSet = !clockSet;
       AUTOPLAY = false;
       secs = 0;
-#if (USE_CLOCK == 1)
+#if ((USE_CLOCK == 1) && (USE_RTC))
       if (!clockSet) rtc.adjust(DateTime(2014, 1, 21, hrs, mins, 0)); // установка нового времени в RTC
 #endif
     }

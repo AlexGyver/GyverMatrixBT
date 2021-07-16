@@ -21,14 +21,13 @@ int8_t velX_ark = 3;
 int8_t velY_ark = (long)sqrt(sq(VELOCITY) - sq(velX_ark));
 int8_t shelf_x = WIDTH / 2 - SHELF_LENGTH / 2;
 byte shelfMAX = WIDTH - SHELF_LENGTH;
-int arkScore;
 
 timerMinim ballTimer(BALL_SPEED);
 timerMinim popTimeout(500);
 timerMinim shelfTimer(150);
 
 void newGameArkan() {
-  arkScore = 0;
+  Score = 0;
   generateBlocks();
   shelf_x = WIDTH / 2 - SHELF_LENGTH / 2;
   posX_ark = WIDTH / 2 * 10;
@@ -167,7 +166,7 @@ boolean checkBlocks() {   // возвр ДА если блоков нет
 }
 
 void redrawBlock(byte blockX, byte blockY) {
-  arkScore++;
+  Score++;
   if (getPixColorXY(blockX, blockY) == BLOCK_COLOR_1) drawPixelXY(blockX, blockY, 0);
   else if (getPixColorXY(blockX, blockY) == BLOCK_COLOR_2) drawPixelXY(blockX, blockY, BLOCK_COLOR_1);
   else if (getPixColorXY(blockX, blockY) == BLOCK_COLOR_3) drawPixelXY(blockX, blockY, BLOCK_COLOR_2);
@@ -197,7 +196,7 @@ void generateBlocks() {
 }
 
 void gameOverArkan() {
-  displayScore(arkScore);
+  displayScore(Score);
   delay(800);
   FastLED.clear();
   newGameArkan();

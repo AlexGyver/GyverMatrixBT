@@ -4,10 +4,9 @@
 #define DENCE 210 //плотность блоков(меньше число - больше шанса)
 #if (USE_RUNNER == 1)
 byte Gpos=WIDTH/2;
-int gScore;
 
 void newGame() {
-  gScore = 0;
+  Score = 0;
   FastLED.clear();
 }
 
@@ -40,7 +39,7 @@ void runRoutine() {
   }
 
   if (gameTimer.isReady()) {        // главный таймер игры
-    gScore ++;
+    Score ++;
     if(getPixColorXY(Gpos, 1) == GLOBAL_COLOR_1)gameOver();//если перед ним блок, ему 3.14зда
     shiftDown();//здвиг всего вниз
     drawPixelXY(Gpos,0,GLOBAL_COLOR_2);
@@ -61,7 +60,7 @@ void runRoutine() {
 
 void gameOver() {
   FastLED.clear();
-  displayScore(gScore);
+  displayScore(Score);
   delay(800);
   newGame();
 }

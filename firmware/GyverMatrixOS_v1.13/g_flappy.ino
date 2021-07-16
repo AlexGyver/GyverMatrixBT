@@ -19,7 +19,6 @@ int posFlap = 0;
 int velFlap = 0;  // в мм и мм/с
 byte prevposFlap;
 byte obstCounterFlap;
-int flappyScore;
 
 void flappyRoutine() {
   if (loadingFlag) {
@@ -54,7 +53,7 @@ void flappyRoutine() {
       obstCounterFlap++;
       if (obstCounterFlap >= MIN_GAP_F) {
         obstCounterFlap = 0;
-        flappyScore++;
+        Score++;
 
         for (byte i = 0; i < HEIGHT; i++) {
           drawPixelXY(WIDTH - 1, i, GLOBAL_COLOR_1);
@@ -82,8 +81,8 @@ void flappyRoutine() {
     }
     if (getPixColorXY(0, posFlap / 10) == GLOBAL_COLOR_1 ||
         getPixColorXY(1, posFlap / 10) == GLOBAL_COLOR_1) {
-      displayScore(flappyScore);
-      flappyScore = 0;
+      displayScore(Score);
+      Score = 0;
       loadingFlag = true;
       delay(800);
       return;

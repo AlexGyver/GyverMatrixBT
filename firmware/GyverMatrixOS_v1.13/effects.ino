@@ -26,35 +26,41 @@
 #define SNOW_DENSE 10     // плотность снегопада
 
 // эффекты "узоры" и "тикси ленд"
-#define NEW_TIME 0       // время обновления эфффекта(в секундах)(0-отключить)
+#define NEW_TIME 60       // время обновления эфффекта(в секундах)(0-отключить)
 
 // --------------------- ДЛЯ РАЗРАБОТЧИКОВ ----------------------
-
-// *********** "дыхание" яркостью ***********
-boolean brightnessDirection;
-void brightnessRoutine() {
-  if (brightnessDirection) {
-    breathBrightness += 2;
-    if (breathBrightness > globalBrightness - 1) {
-      brightnessDirection = false;
-    }
-  } else {
-    breathBrightness -= 2;
-    if (breathBrightness < 1) {
-      brightnessDirection = true;
-    }
+boolean brightnessDirection; byte hue;
+void filter() {
+  switch (variant) {
+    case 1: if (brightnessDirection) {
+        breathBrightness += 2;
+        if (breathBrightness > globalBrightness - 1) {
+          brightnessDirection = false;
+        }
+      } else {
+        breathBrightness -= 2;
+        if (breathBrightness < 1) {
+          brightnessDirection = true;
+        }
+      }
+      FastLED.setBrightness(breathBrightness);
+      break;
+    case 2: hue += 4;
+      for (int i = 0; i < NUM_LEDS; i++) {
+        if (getPixColor(i) > 0) leds[i] = CHSV(hue, 255, 255);
+      }
+      break;
+    case 3:
+      hue++;
+      for (byte i = 0; i < WIDTH; i++) {
+        CHSV thisColor = CHSV((byte)(hue + i * float(255 / WIDTH)), 255, 255);
+        for (byte j = 0; j < HEIGHT; j++)
+          if (getPixColor(getPixelNumber(i, j)) > 0) drawPixelXY(i, j, thisColor);
+      }
+      break;
   }
-  FastLED.setBrightness(breathBrightness);
 }
 
-// *********** смена цвета активных светодиодов (рисунка) ***********
-byte hue;
-void colorsRoutine() {
-  hue += 4;
-  for (int i = 0; i < NUM_LEDS; i++) {
-    if (getPixColor(i) > 0) leds[i] = CHSV(hue, 255, 255);
-  }
-}
 
 // *********** снегопад 2.0 ***********
 void snowRoutine() {
@@ -63,48 +69,15 @@ void snowRoutine() {
     modeCode = 12;
   }
   // сдвигаем всё вниз
+  shiftDown();
+  for (byte x = 0; x < WIDTH; x++) {
+    // заполняем случайно верхнюю строку
+    // а также не даём двум блокам по вертикали вместе быть
+    if (getPixColorXY(x, HEIGHT - 2) == 0 && (random(0, SNOW_DENSE) == 0))
+      drawPixelXY(x, HEIGHT - 1, 0xE0FFFF - 0x101010 * random(0, 4));
+    else
+      drawPixelXY(x, HEIGHT - 1, 0x000000);
 
-  if (variant) {// заполняем головами комет левую и верхнюю линию
-    for (byte i = 0; i < HEIGHT; i++) {
-      if (getPixColorXY(0, i) == 0
-          && (random(0, SNOW_DENSE) == 0)
-          && getPixColorXY(0, i + 1) == 0
-          && getPixColorXY(0, i - 1) == 0)
-        leds[getPixelNumber(0, i)] = CHSV(0, 0, 255);
-    }
-    for (byte i = 0; i < WIDTH; i++) {
-      if (getPixColorXY(i, HEIGHT - 1) == 0
-          && (random(0, SNOW_DENSE) == 0)
-          && getPixColorXY(i + 1, HEIGHT - 1) == 0
-          && getPixColorXY(i - 1, HEIGHT - 1) == 0)
-        leds[getPixelNumber(i, HEIGHT - 1)] = CHSV(0, 0, 255);
-    }
-    // сдвигаем по диагонали
-    for (byte y = 0; y < HEIGHT - 1; y++) {
-      for (byte x = WIDTH - 1; x > 0; x--) {
-        drawPixelXY(x, y, getPixColorXY(x - 1, y + 1));
-      }
-    }
-
-
-    // уменьшаем яркость левой и верхней линии, формируем "хвосты"
-    for (byte i = 0; i < HEIGHT; i++) {
-      fadePixel(0, i, TAIL_STEP);
-    }
-    for (byte i = 0; i < WIDTH; i++) {
-      fadePixel(i, HEIGHT - 1, TAIL_STEP / 2 + 10);
-    }
-  }
-  else {
-    shiftDown();
-    for (byte x = 0; x < WIDTH; x++) {
-      // заполняем случайно верхнюю строку
-      // а также не даём двум блокам по вертикали вместе быть
-      if (getPixColorXY(x, HEIGHT - 2) == 0 && (random(0, SNOW_DENSE) == 0))
-        drawPixelXY(x, HEIGHT - 1, 0xE0FFFF - 0x101010 * random(0, 4));
-      else
-        drawPixelXY(x, HEIGHT - 1, 0x000000);
-    }
   }
 }
 
@@ -338,8 +311,7 @@ void ballsRoutine() {
 
 
 
-  if (variant)  FastLED.clear();
-  else fader(256U - TRACK_STEP);
+     fader(256U - TRACK_STEP);
 
 
   // движение шариков

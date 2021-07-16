@@ -19,7 +19,6 @@ int posRun = 0;
 int velRun = 0;  // в мм и мм/с
 byte prevPosRun;
 byte obstCounter;
-int runnerScore;
 
 void runnerRoutine() {
   if (loadingFlag) {
@@ -53,7 +52,7 @@ void runnerRoutine() {
       obstCounter++;
       if (obstCounter >= MIN_GAP && random(0, OBST_PROB) == 0) {
         obstCounter = 0;
-        runnerScore++;
+        Score++;
         byte thisHeight = random(1, OBST_HEIGHT + 1);
         for (byte i = 0; i < thisHeight; i++)
           drawPixelXY(WIDTH - 1, i, GLOBAL_COLOR_2);
@@ -70,8 +69,8 @@ void runnerRoutine() {
       velRun = 0;
     }
     if (getPixColorXY(1, posRun / 10) == GLOBAL_COLOR_2) {
-      displayScore(runnerScore);
-      runnerScore = 0;
+      displayScore(Score);
+      Score = 0;
       loadingFlag = true;
       delay(800);
       return;

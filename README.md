@@ -57,13 +57,13 @@
 ## Материалы и компоненты
 ### Ссылки оставлены на магазины, с которых я закупаюсь уже не один год
 Полный список компонентов есть в статье https://alexgyver.ru/matrix_guide/
-- Arduino NANO http://ali.ski/nnJfp4  http://ali.ski/SCrY0N  http://ali.ski/JXmo9R
-- Bluetooth HC-06 http://ali.ski/5l4QFW  http://ali.ski/VYwO9G  http://ali.ski/lEvyH
-- Матрицы разные http://ali.ski/pw2ic
-- Лента http://ali.ski/YdfMN
-- Модульная гирлянда http://ali.ski/0h35RR
-- Резисторы http://ali.ski/UEez2
-- БП 5 Вольт http://ali.ski/3cNyj  http://ali.ski/qSKFK
+- Arduino NANO https://ali.ski/RJYuq  https://ali.ski/8JonUm  https://ali.ski/0DIg3
+- Bluetooth HC-06 https://ali.ski/nrJ-G  https://ali.ski/0H5Vk  https://ali.ski/xC5vwp
+- Матрицы разные https://ali.ski/ft9Y6T
+- Лента https://ali.ski/cXIgB1
+- Модульная гирлянда https://ali.ski/qrVjv
+- Резисторы https://ali.ski/sr6Xy
+- БП 5 Вольт https://ali.ski/HkrNAG  https://ali.ski/Y-6VK
 
 ## Вам скорее всего пригодится
 * [Всё для пайки (паяльники и примочки)](http://alexgyver.ru/all-for-soldering/)

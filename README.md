@@ -54,17 +54,6 @@
 ![SCHEME](https://github.com/AlexGyver/GyverMatrixBT/blob/master/schemes/scheme.jpg)
 
 <a id="chapter-3"></a>
-## Материалы и компоненты
-### Ссылки оставлены на магазины, с которых я закупаюсь уже не один год
-Полный список компонентов есть в статье https://alexgyver.ru/matrix_guide/
-- Arduino NANO http://ali.ski/nnJfp4  http://ali.ski/SCrY0N  http://ali.ski/JXmo9R
-- Bluetooth HC-06 http://ali.ski/5l4QFW  http://ali.ski/VYwO9G  http://ali.ski/lEvyH
-- Матрицы разные http://ali.ski/pw2ic
-- Лента http://ali.ski/YdfMN
-- Модульная гирлянда http://ali.ski/0h35RR
-- Резисторы http://ali.ski/UEez2
-- БП 5 Вольт http://ali.ski/3cNyj  http://ali.ski/qSKFK
-
 ## Вам скорее всего пригодится
 * [Всё для пайки (паяльники и примочки)](http://alexgyver.ru/all-for-soldering/)
 * [Недорогие инструменты](http://alexgyver.ru/my_instruments/)

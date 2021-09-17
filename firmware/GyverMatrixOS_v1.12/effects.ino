@@ -55,7 +55,7 @@ byte hue;
 void colorsRoutine() {
   hue += 4;
   for (int i = 0; i < NUM_LEDS; i++) {
-    if (getPixColor(i) > 0) leds[i] = CHSV(hue, 255, 255);
+    if ((bool)leds[i]) leds[i] = CHSV(hue, 255, 255);
   }
 }
 
@@ -118,7 +118,7 @@ void ballRoutine() {
   FastLED.clear();
   for (byte i = 0; i < BALL_SIZE; i++)
     for (byte j = 0; j < BALL_SIZE; j++)
-      leds[getPixelNumber(coordB[0] / 10 + i, coordB[1] / 10 + j)] = ballColor;
+      drawPixelXY(coordB[0] / 10 + i, coordB[1] / 10 + j, ballColor);
 }
 
 // *********** радуга заливка ***********
@@ -254,7 +254,7 @@ void drawFrame(int pcnt) {
                        (uint8_t)max(0, nextv) // V
                      );
 
-        leds[getPixelNumber(x, y)] = color;
+        drawPixelXY(x, y, color);
       } else if (y == 8 && SPARKLES) {
         if (random(0, 20) == 0 && getPixColorXY(x, y - 1) != 0) drawPixelXY(x, y, getPixColorXY(x, y - 1));
         else drawPixelXY(x, y, 0);
@@ -278,7 +278,7 @@ void drawFrame(int pcnt) {
                    255,           // S
                    (uint8_t)(((100.0 - pcnt) * matrixValue[0][newX] + pcnt * line[newX]) / 100.0) // V
                  );
-    leds[getPixelNumber(newX, 0)] = color;
+    drawPixelXY(newX, 0, color);
   }
 }
 
@@ -379,7 +379,7 @@ void ballsRoutine() {
       coord[j][1] = (HEIGHT - 1) * 10;
       vector[j][1] = -vector[j][1];
     }
-    leds[getPixelNumber(coord[j][0] / 10, coord[j][1] / 10)] =  ballColors[j];
+    drawPixelXY(coord[j][0] / 10, coord[j][1] / 10, ballColors[j]);
   }
 }
 
@@ -438,16 +438,19 @@ void fader(byte step) {
   }
 }
 void fadePixel(byte i, byte j, byte step) {     // новый фейдер
-  int pixelNum = getPixelNumber(i, j);
-  if (getPixColor(pixelNum) == 0) return;
+  int segmNum = getPixelNumber(i, j);
+  if (getPixColor(segmNum) == 0) return;
 
-  if (leds[pixelNum].r >= 30 ||
-      leds[pixelNum].g >= 30 ||
-      leds[pixelNum].b >= 30) {
-    leds[pixelNum].fadeToBlackBy(step);
-  } else {
-    leds[pixelNum] = 0;
-  }
+  int pixelNum = segmNum * SEGMENTS;
+  for (byte i = 0; i < SEGMENTS; i++) {
+    if (leds[pixelNum + i].r >= 30 ||
+        leds[pixelNum + i].g >= 30 ||
+        leds[pixelNum + i].b >= 30) {
+      leds[pixelNum + i].fadeToBlackBy(step);
+    } else {
+      leds[pixelNum + i] = 0;
+    }
+  }	
 }
 
 /*
@@ -490,15 +493,19 @@ void starfallRoutine() {
     if (getPixColorXY(0, i) == 0
         && (random(0, STAR_DENSE) == 0)
         && getPixColorXY(0, i + 1) == 0
-        && getPixColorXY(0, i - 1) == 0)
-      leds[getPixelNumber(0, i)] = CHSV(random(0, 200), SATURATION, 255);
+        && getPixColorXY(0, i - 1) == 0) {
+      CRGB randomColor = CHSV(random(0, 200), SATURATION, 255);
+      drawPixelXY(0, i, randomColor);
+	}  
   }
   for (byte i = 0; i < WIDTH / 2; i++) {
     if (getPixColorXY(i, HEIGHT - 1) == 0
         && (random(0, STAR_DENSE) == 0)
         && getPixColorXY(i + 1, HEIGHT - 1) == 0
-        && getPixColorXY(i - 1, HEIGHT - 1) == 0)
-      leds[getPixelNumber(i, HEIGHT - 1)] = CHSV(random(0, 200), SATURATION, 255);
+        && getPixColorXY(i - 1, HEIGHT - 1) == 0) {
+      CRGB randomColor = CHSV(random(0, 200), SATURATION, 255);
+	  drawPixelXY(i, HEIGHT - 1, randomColor);
+	}
   }
 
   // сдвигаем по диагонали
@@ -523,8 +530,10 @@ void sparklesRoutine() {
   for (byte i = 0; i < DENSE; i++) {
     byte x = random(0, WIDTH);
     byte y = random(0, HEIGHT);
-    if (getPixColorXY(x, y) == 0)
-      leds[getPixelNumber(x, y)] = CHSV(random(0, 255), 255, 255);
+    if (getPixColorXY(x, y) == 0) {
+	  CRGB randomColor = CHSV(random(0, 255), 255, 255);
+      drawPixelXY(x, y, randomColor);
+	}
   }
   fader(BRIGHT_STEP);
 }

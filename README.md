@@ -10,7 +10,7 @@
 [![AlexGyver YouTube](http://alexgyver.ru/git_banner.jpg)](https://www.youtube.com/channel/UCgtAOyEQdAyjvm9ATCi_Aig?sub_confirmation=1)
 
 <a id="chapter-0"></a>
-## Описание проекта
+## Описание проекта 1
 Матрица на адресных светодиодах с управлением по Bluetooth  
 Гайд по матрицам: https://alexgyver.ru/matrix_guide/  
 Страница проекта на сайте: https://alexgyver.ru/gyvermatrixbt/  
